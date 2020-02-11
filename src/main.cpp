@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Open-Transactions developers
+// Copyright (c) 2019-2020 The Open-Transactions developers
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -66,6 +66,25 @@ int main(int argc, char* argv[])
 
     for (const auto& [chain, seed] : chains) {
         client.Blockchain().Start(chain, seed);
+    }
+
+    auto nyms = client.Wallet().LocalNyms();
+    auto reason = client.Factory().PasswordPrompt("Blockchain operation");
+
+    if (nyms.empty()) {
+        client.Wallet().Nym(reason);
+        nyms = client.Wallet().LocalNyms();
+    }
+
+    OT_ASSERT(false == nyms.empty())
+
+    for (const auto& [chain, seed] : chains) {
+        for (const auto& nym : nyms) {
+            if (0 == client.Blockchain().AccountList(nym, chain).size()) {
+                client.Blockchain().NewHDSubaccount(
+                    nym, ot::BlockchainAccountType::BIP44, chain, reason);
+            }
+        }
     }
 
     ot.HandleSignals();

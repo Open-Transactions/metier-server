@@ -62,6 +62,7 @@ int main(int argc, char* argv[])
     };
     ot::Signals::Block();
     const auto& ot = ot::InitContext(args);
+    ot.HandleSignals();
     const auto& client = ot.StartClient(args, 0);
 
     for (const auto& [chain, seed] : chains) {
@@ -80,14 +81,35 @@ int main(int argc, char* argv[])
 
     for (const auto& [chain, seed] : chains) {
         for (const auto& nym : nyms) {
-            if (0 == client.Blockchain().AccountList(nym, chain).size()) {
+            auto accounts = client.Blockchain().AccountList(nym, chain);
+
+            if (0 == accounts.size()) {
                 client.Blockchain().NewHDSubaccount(
                     nym, ot::BlockchainAccountType::BIP44, chain, reason);
+                accounts = client.Blockchain().AccountList(nym, chain);
+            }
+
+            OT_ASSERT(0 < accounts.size())
+
+            const auto& id = *accounts.begin();
+            const auto& account = client.Blockchain().HDSubaccount(nym, id);
+            const auto& first = account.BalanceElement(
+                ot::api::client::blockchain::Subchain::External, 0);
+            ot::LogNormal("First receiving address: ")(first.Address(
+                ot::api::client::blockchain::AddressStyle::P2PKH
+            )).Flush();
+
+            {
+                auto& accountList = client.UI().AccountList(nym);
+                accountList.SetCallback(
+                    [](){
+                        ot::LogOutput("AccountList ui model updated").Flush();
+                    }
+                );
             }
         }
     }
 
-    ot.HandleSignals();
     ot::Join();
     cleanup_globals();
 

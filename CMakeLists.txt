@@ -45,9 +45,8 @@ print_build_details(OTBLOCKCHAIN_PEDANTIC_BUILD "")
 # Dependencies
 
 find_package(Protobuf REQUIRED)
-find_package(opentxs-proto REQUIRED)
 find_package(opentxs REQUIRED)
-find_package(Boost REQUIRED program_options)
+find_package(Boost REQUIRED program_options filesystem iostreams)
 find_package(
   Qt5
   COMPONENTS

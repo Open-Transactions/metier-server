@@ -79,6 +79,9 @@ int main(int argc, char* argv[])
 
     OT_ASSERT(false == nyms.empty())
 
+    auto cache =
+        std::map<ot::proto::ContactItemType, std::atomic<std::int64_t>>{};
+
     for (const auto& [chain, seed] : chains) {
         for (const auto& nym : nyms) {
             auto accounts = client.Blockchain().AccountList(nym, chain);
@@ -95,17 +98,36 @@ int main(int argc, char* argv[])
             const auto& account = client.Blockchain().HDSubaccount(nym, id);
             const auto& first = account.BalanceElement(
                 ot::api::client::blockchain::Subchain::External, 0);
-            ot::LogNormal("First receiving address: ")(first.Address(
-                ot::api::client::blockchain::AddressStyle::P2PKH
-            )).Flush();
+            ot::LogNormal("First receiving address: ")(
+                first.Address(ot::api::client::blockchain::AddressStyle::P2PKH))
+                .Flush();
 
             {
-                auto& accountList = client.UI().AccountList(nym);
-                accountList.SetCallback(
-                    [](){
-                        ot::LogOutput("AccountList ui model updated").Flush();
+                auto& widget = client.UI().AccountList(nym);
+                widget.SetCallback([&]() {
+                    auto print = [&](const auto& row) {
+                        auto& previous = cache[row->Unit()];
+                        auto current = row->Balance();
+
+                        if (previous != current) {
+                            ot::LogOutput(row->NotaryName())(": ")(
+                                row->DisplayBalance())
+                                .Flush();
+                        }
+
+                        previous = current;
+                    };
+                    auto row = widget.First();
+
+                    if (false == row->Valid()) { return; }
+
+                    print(row);
+
+                    while (false == row->Last()) {
+                        row = widget.Next();
+                        print(row);
                     }
-                );
+                });
             }
         }
     }

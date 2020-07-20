@@ -81,9 +81,12 @@ int main(int argc, char* argv[])
 
     auto cache =
         std::map<ot::proto::ContactItemType, std::atomic<std::int64_t>>{};
+    auto nymID = client.Factory().NymID();
+    auto address = std::string{};
 
     for (const auto& [chain, seed] : chains) {
         for (const auto& nym : nyms) {
+            nymID = nym;
             auto accounts = client.Blockchain().AccountList(nym, chain);
 
             if (0 == accounts.size()) {
@@ -98,9 +101,9 @@ int main(int argc, char* argv[])
             const auto& account = client.Blockchain().HDSubaccount(nym, id);
             const auto& first = account.BalanceElement(
                 ot::api::client::blockchain::Subchain::External, 0);
-            ot::LogNormal("First receiving address: ")(
-                first.Address(ot::api::client::blockchain::AddressStyle::P2PKH))
-                .Flush();
+            address =
+                first.Address(ot::api::client::blockchain::AddressStyle::P2PKH);
+            ot::LogNormal("First receiving address: ")(address).Flush();
 
             {
                 auto& widget = client.UI().AccountList(nym);
@@ -152,13 +155,18 @@ void process_arguments(
         } else if (name == "tnbtc") {
             seed = value.as<std::string>();
             chains[ot::blockchain::Type::Bitcoin_testnet3] = seed;
-        }
-        if (name == "bch") {
+        } else if (name == "bch") {
             seed = value.as<std::string>();
             chains[ot::blockchain::Type::BitcoinCash] = seed;
         } else if (name == "tnbch") {
             seed = value.as<std::string>();
             chains[ot::blockchain::Type::BitcoinCash_testnet3] = seed;
+        } else if (name == "ltc") {
+            seed = value.as<std::string>();
+            chains[ot::blockchain::Type::Litecoin] = seed;
+        } else if (name == "tnltc") {
+            seed = value.as<std::string>();
+            chains[ot::blockchain::Type::Litecoin_testnet4] = seed;
         }
     }
 }
@@ -177,7 +185,13 @@ void read_options(int argc, char** argv)
         "Start Bitcoin Cash blockchain")(
         "tnbch",
         po::value<std::string>()->implicit_value(""),
-        "Start Bitcoin Cash testnet3 blockchain");
+        "Start Bitcoin Cash testnet3 blockchain")(
+        "ltc",
+        po::value<std::string>()->implicit_value(""),
+        "Start Litecoin blockchain")(
+        "tnltc",
+        po::value<std::string>()->implicit_value(""),
+        "Start Litecoin testnet4 blockchain");
 
     try {
         po::store(po::parse_command_line(argc, argv, options()), variables());

@@ -3,71 +3,53 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <opentxs/opentxs.hpp>
-
 #include <boost/program_options.hpp>
+#include <opentxs/opentxs.hpp>
+#include <algorithm>
+#include <cctype>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
 
 namespace ot = opentxs;
 namespace po = boost::program_options;
 
-void cleanup_globals();
-po::variables_map& variables();
-po::options_description& options();
+using Type = ot::blockchain::Type;
+using Enabled = std::map<Type, std::string>;
+using Disabled = std::set<std::string>;
 
-static po::variables_map* variables_{};
-static po::options_description* options_{};
+po::variables_map* variables_{};
+po::options_description* options_{};
 
-po::variables_map& variables()
-{
-    if (nullptr == variables_) { variables_ = new po::variables_map; }
-
-    return *variables_;
-}
-
-po::options_description& options()
-{
-    if (nullptr == options_) {
-        options_ = new po::options_description{"Options"};
-    }
-
-    return *options_;
-}
-
-void cleanup_globals()
-{
-    if (nullptr != variables_) {
-        delete variables_;
-        variables_ = nullptr;
-    }
-
-    if (nullptr != options_) {
-        delete options_;
-        options_ = nullptr;
-    }
-}
-
-void process_arguments(
-    int argc,
-    char* argv[],
-    std::map<ot::blockchain::Type, std::string>& chains);
-void read_options(int argc, char** argv);
+auto cleanup_globals() noexcept -> void;
+auto options() noexcept -> po::options_description&;
+auto lower(std::string& str) noexcept -> std::string&;
+auto parse(
+    const std::string& input,
+    const Type type,
+    Enabled& enabled,
+    Disabled& disabled) noexcept -> void;
+auto process_arguments(Enabled& enabled, Disabled& disabled) noexcept -> void;
+auto read_options(int argc, char** argv) noexcept -> void;
+auto variables() noexcept -> po::variables_map&;
 
 int main(int argc, char* argv[])
 {
-    std::map<ot::blockchain::Type, std::string> chains{};
+    auto enabled = Enabled{};
+    auto disabled = Disabled{};
     read_options(argc, argv);
-    process_arguments(argc, argv, chains);
+    process_arguments(enabled, disabled);
     const auto args = ot::ArgList{
+        {OPENTXS_ARG_BLOCK_STORAGE_LEVEL, {"2"}},
         {OPENTXS_ARG_HOME, {ot::api::Context::SuggestFolder("otblockchain")}},
+        {OPENTXS_ARG_DISABLED_BLOCKCHAINS, disabled},
     };
+
     ot::Signals::Block();
     const auto& ot = ot::InitContext(args);
     ot.HandleSignals();
     const auto& client = ot.StartClient(args, 0);
-
-    for (const auto& [chain, seed] : chains) {
-        client.Blockchain().Start(chain, seed);
-    }
 
     auto nyms = client.Wallet().LocalNyms();
     auto reason = client.Factory().PasswordPrompt("Blockchain operation");
@@ -84,7 +66,9 @@ int main(int argc, char* argv[])
     auto nymID = client.Factory().NymID();
     auto address = std::string{};
 
-    for (const auto& [chain, seed] : chains) {
+    for (const auto& [chain, seed] : enabled) {
+        client.Blockchain().Enable(chain, seed);
+
         for (const auto& nym : nyms) {
             nymID = nym;
             auto accounts = client.Blockchain().AccountList(nym, chain);
@@ -141,57 +125,87 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void process_arguments(
-    [[maybe_unused]] int argc,
-    [[maybe_unused]] char* argv[],
-    std::map<ot::blockchain::Type, std::string>& chains)
+auto cleanup_globals() noexcept -> void
 {
-    std::string seed{};
+    if (nullptr != variables_) {
+        delete variables_;
+        variables_ = nullptr;
+    }
+
+    if (nullptr != options_) {
+        delete options_;
+        options_ = nullptr;
+    }
+}
+
+auto lower(std::string& s) noexcept -> std::string&
+{
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
+
+    return s;
+}
+
+auto options() noexcept -> po::options_description&
+{
+    if (nullptr == options_) {
+        options_ = new po::options_description{"Options"};
+    }
+
+    return *options_;
+}
+
+auto parse(
+    const std::string& input,
+    const Type type,
+    Enabled& enabled,
+    Disabled& disabled) noexcept -> void
+{
+    constexpr auto off{"off"};
+
+    if (input == off) {
+        disabled.emplace(std::to_string(static_cast<std::uint32_t>(type)));
+    } else {
+        enabled[type] = input;
+    }
+}
+
+auto process_arguments(Enabled& enabled, Disabled& disabled) noexcept -> void
+{
+    auto map = std::map<std::string, Type>{};
+
+    for (const auto& chain : ot::blockchain::SupportedChains()) {
+        auto ticker = ot::blockchain::TickerSymbol(chain);
+        lower(ticker);
+        map.emplace(std::move(ticker), chain);
+    }
+
+    auto seed = std::string{};
 
     for (const auto& [name, value] : variables()) {
-        if (name == "btc") {
-            seed = value.as<std::string>();
-            chains[ot::blockchain::Type::Bitcoin] = seed;
-        } else if (name == "tnbtc") {
-            seed = value.as<std::string>();
-            chains[ot::blockchain::Type::Bitcoin_testnet3] = seed;
-        } else if (name == "bch") {
-            seed = value.as<std::string>();
-            chains[ot::blockchain::Type::BitcoinCash] = seed;
-        } else if (name == "tnbch") {
-            seed = value.as<std::string>();
-            chains[ot::blockchain::Type::BitcoinCash_testnet3] = seed;
-        } else if (name == "ltc") {
-            seed = value.as<std::string>();
-            chains[ot::blockchain::Type::Litecoin] = seed;
-        } else if (name == "tnltc") {
-            seed = value.as<std::string>();
-            chains[ot::blockchain::Type::Litecoin_testnet4] = seed;
+        try {
+            auto input{name};
+            const auto chain = map.at(lower(input));
+            parse(value.as<std::string>(), chain, enabled, disabled);
+        } catch (...) {
+            continue;
         }
     }
 }
 
-void read_options(int argc, char** argv)
+auto read_options(int argc, char** argv) noexcept -> void
 {
-    options().add_options()(
-        "btc",
-        po::value<std::string>()->implicit_value(""),
-        "Start Bitcoin blockchain")(
-        "tnbtc",
-        po::value<std::string>()->implicit_value(""),
-        "Start Bitcoin testnet3 blockchain")(
-        "bch",
-        po::value<std::string>()->implicit_value(""),
-        "Start Bitcoin Cash blockchain")(
-        "tnbch",
-        po::value<std::string>()->implicit_value(""),
-        "Start Bitcoin Cash testnet3 blockchain")(
-        "ltc",
-        po::value<std::string>()->implicit_value(""),
-        "Start Litecoin blockchain")(
-        "tnltc",
-        po::value<std::string>()->implicit_value(""),
-        "Start Litecoin testnet4 blockchain");
+    for (const auto& chain : ot::blockchain::SupportedChains()) {
+        auto ticker = ot::blockchain::TickerSymbol(chain);
+        auto message = std::stringstream{};
+        message << "Start " << ot::blockchain::DisplayString(chain)
+                << " blockchain";
+        options().add_options()(
+            lower(ticker).c_str(),
+            po::value<std::string>()->implicit_value(""),
+            message.str().c_str());
+    }
 
     try {
         po::store(po::parse_command_line(argc, argv, options()), variables());
@@ -199,4 +213,11 @@ void read_options(int argc, char** argv)
     } catch (po::error& e) {
         std::cerr << "ERROR: " << e.what() << "\n\n" << options() << std::endl;
     }
+}
+
+auto variables() noexcept -> po::variables_map&
+{
+    if (nullptr == variables_) { variables_ = new po::variables_map; }
+
+    return *variables_;
 }

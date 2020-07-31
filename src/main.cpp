@@ -30,7 +30,11 @@ auto parse(
     const Type type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void;
-auto process_arguments(Enabled& enabled, Disabled& disabled) noexcept -> void;
+auto process_arguments(
+    Enabled& enabled,
+    Disabled& disabled,
+    int& blockLevel,
+    bool& help) noexcept -> void;
 auto read_options(int argc, char** argv) noexcept -> void;
 auto variables() noexcept -> po::variables_map&;
 
@@ -38,13 +42,21 @@ int main(int argc, char* argv[])
 {
     auto enabled = Enabled{};
     auto disabled = Disabled{};
+    auto blockLevel = int{0};
+    auto help{false};
     read_options(argc, argv);
-    process_arguments(enabled, disabled);
+    process_arguments(enabled, disabled, blockLevel, help);
     const auto args = ot::ArgList{
-        {OPENTXS_ARG_BLOCK_STORAGE_LEVEL, {"2"}},
+        {OPENTXS_ARG_BLOCK_STORAGE_LEVEL, {std::to_string(blockLevel)}},
         {OPENTXS_ARG_HOME, {ot::api::Context::SuggestFolder("otblockchain")}},
         {OPENTXS_ARG_DISABLED_BLOCKCHAINS, disabled},
     };
+
+    if (help) {
+        std::cout << options() << "\n";
+
+        return 0;
+    }
 
     ot::Signals::Block();
     const auto& ot = ot::InitContext(args);
@@ -171,7 +183,14 @@ auto parse(
     }
 }
 
-auto process_arguments(Enabled& enabled, Disabled& disabled) noexcept -> void
+constexpr auto help_{"help"};
+constexpr auto block_storage_{"block_storage"};
+
+auto process_arguments(
+    Enabled& enabled,
+    Disabled& disabled,
+    int& blockLevel,
+    bool& help) noexcept -> void
 {
     auto map = std::map<std::string, Type>{};
 
@@ -184,23 +203,40 @@ auto process_arguments(Enabled& enabled, Disabled& disabled) noexcept -> void
     auto seed = std::string{};
 
     for (const auto& [name, value] : variables()) {
-        try {
-            auto input{name};
-            const auto chain = map.at(lower(input));
-            parse(value.as<std::string>(), chain, enabled, disabled);
-        } catch (...) {
-            continue;
+        if (name == help_) {
+            help = true;
+        } else if (name == block_storage_) {
+            try {
+                blockLevel = value.as<int>();
+            } catch (...) {
+            }
+        } else {
+            try {
+                auto input{name};
+                const auto chain = map.at(lower(input));
+                parse(value.as<std::string>(), chain, enabled, disabled);
+            } catch (...) {
+                continue;
+            }
         }
     }
 }
 
 auto read_options(int argc, char** argv) noexcept -> void
 {
+    options().add_options()(help_, "Display this message");
+    options().add_options()(
+        block_storage_,
+        po::value<int>(),
+        "Block persistence level.\n    0: do not save any blocks\n    1: save "
+        "blocks downloaded by the wallet\n    2: download and save all blocks");
+
     for (const auto& chain : ot::blockchain::SupportedChains()) {
         auto ticker = ot::blockchain::TickerSymbol(chain);
         auto message = std::stringstream{};
-        message << "Start " << ot::blockchain::DisplayString(chain)
-                << " blockchain";
+        message << "Enable " << ot::blockchain::DisplayString(chain)
+                << " blockchain.\nOptionally specify ip address of seed node "
+                   "or \"off\" to disable";
         options().add_options()(
             lower(ticker).c_str(),
             po::value<std::string>()->implicit_value(""),

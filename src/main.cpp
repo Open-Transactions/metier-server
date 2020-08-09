@@ -34,7 +34,8 @@ auto process_arguments(
     Enabled& enabled,
     Disabled& disabled,
     int& blockLevel,
-    bool& help) noexcept -> void;
+    bool& help,
+    std::string& home) noexcept -> void;
 auto read_options(int argc, char** argv) noexcept -> void;
 auto variables() noexcept -> po::variables_map&;
 
@@ -44,11 +45,12 @@ int main(int argc, char* argv[])
     auto disabled = Disabled{};
     auto blockLevel = int{0};
     auto help{false};
+    auto home = std::string{};
     read_options(argc, argv);
-    process_arguments(enabled, disabled, blockLevel, help);
+    process_arguments(enabled, disabled, blockLevel, help, home);
     const auto args = ot::ArgList{
         {OPENTXS_ARG_BLOCK_STORAGE_LEVEL, {std::to_string(blockLevel)}},
-        {OPENTXS_ARG_HOME, {ot::api::Context::SuggestFolder("otblockchain")}},
+        {OPENTXS_ARG_HOME, {home}},
         {OPENTXS_ARG_DISABLED_BLOCKCHAINS, disabled},
     };
 
@@ -184,13 +186,15 @@ auto parse(
 }
 
 constexpr auto help_{"help"};
+constexpr auto home_{"data_dir"};
 constexpr auto block_storage_{"block_storage"};
 
 auto process_arguments(
     Enabled& enabled,
     Disabled& disabled,
     int& blockLevel,
-    bool& help) noexcept -> void
+    bool& help,
+    std::string& home) noexcept -> void
 {
     auto map = std::map<std::string, Type>{};
 
@@ -210,6 +214,11 @@ auto process_arguments(
                 blockLevel = value.as<int>();
             } catch (...) {
             }
+        } else if (name == home_) {
+            try {
+                home = value.as<std::string>();
+            } catch (...) {
+            }
         } else {
             try {
                 auto input{name};
@@ -225,6 +234,11 @@ auto process_arguments(
 auto read_options(int argc, char** argv) noexcept -> void
 {
     options().add_options()(help_, "Display this message");
+    options().add_options()(
+        home_,
+        po::value<std::string>()->default_value(
+            ot::api::Context::SuggestFolder("otblockchain")),
+        "Path to data directory");
     options().add_options()(
         block_storage_,
         po::value<int>(),

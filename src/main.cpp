@@ -19,6 +19,14 @@ using Type = ot::blockchain::Type;
 using Enabled = std::map<Type, std::string>;
 using Disabled = std::set<std::string>;
 
+struct Options {
+    ot::ArgList ot_{};
+    Enabled enabled_chains_{};
+    bool show_help_{};
+    int sync_port_{};
+    bool start_sync_server_{};
+};
+
 po::variables_map* variables_{};
 po::options_description* options_{};
 
@@ -30,107 +38,39 @@ auto parse(
     const Type type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void;
-auto process_arguments(
-    Enabled& enabled,
-    Disabled& disabled,
-    int& blockLevel,
-    bool& help,
-    std::string& home) noexcept -> void;
-auto read_options(int argc, char** argv) noexcept -> void;
+auto process_arguments(Options& opts) noexcept -> void;
+auto read_options(int argc, char** argv) noexcept -> bool;
 auto variables() noexcept -> po::variables_map&;
 
 int main(int argc, char* argv[])
 {
-    auto enabled = Enabled{};
-    auto disabled = Disabled{};
-    auto blockLevel = int{0};
-    auto help{false};
-    auto home = std::string{};
-    read_options(argc, argv);
-    process_arguments(enabled, disabled, blockLevel, help, home);
-    const auto args = ot::ArgList{
-        {OPENTXS_ARG_BLOCK_STORAGE_LEVEL, {std::to_string(blockLevel)}},
-        {OPENTXS_ARG_HOME, {home}},
-        {OPENTXS_ARG_DISABLED_BLOCKCHAINS, disabled},
-    };
+    auto opts = Options{};
 
-    if (help) {
+    if (false == read_options(argc, argv)) { return 1; }
+
+    process_arguments(opts);
+
+    if (opts.show_help_) {
         std::cout << options() << "\n";
 
         return 0;
     }
 
     ot::Signals::Block();
-    const auto& ot = ot::InitContext(args);
+    const auto& ot = ot::InitContext(opts.ot_);
     ot.HandleSignals();
-    const auto& client = ot.StartClient(args, 0);
+    const auto& client = ot.StartClient(opts.ot_, 0);
 
-    auto nyms = client.Wallet().LocalNyms();
-    auto reason = client.Factory().PasswordPrompt("Blockchain operation");
-
-    if (nyms.empty()) {
-        client.Wallet().Nym(reason);
-        nyms = client.Wallet().LocalNyms();
+    for (const auto& [chain, seed] : opts.enabled_chains_) {
+        client.Blockchain().Enable(chain, seed);
     }
 
-    OT_ASSERT(false == nyms.empty())
-
-    auto cache =
-        std::map<ot::proto::ContactItemType, std::atomic<std::int64_t>>{};
-    auto nymID = client.Factory().NymID();
-    auto address = std::string{};
-
-    for (const auto& [chain, seed] : enabled) {
-        client.Blockchain().Enable(chain, seed);
-
-        for (const auto& nym : nyms) {
-            nymID = nym;
-            auto accounts = client.Blockchain().AccountList(nym, chain);
-
-            if (0 == accounts.size()) {
-                client.Blockchain().NewHDSubaccount(
-                    nym, ot::BlockchainAccountType::BIP44, chain, reason);
-                accounts = client.Blockchain().AccountList(nym, chain);
-            }
-
-            OT_ASSERT(0 < accounts.size())
-
-            const auto& id = *accounts.begin();
-            const auto& account = client.Blockchain().HDSubaccount(nym, id);
-            const auto& first = account.BalanceElement(
-                ot::api::client::blockchain::Subchain::External, 0);
-            address =
-                first.Address(ot::api::client::blockchain::AddressStyle::P2PKH);
-            ot::LogNormal("First receiving address: ")(address).Flush();
-
-            {
-                auto& widget = client.UI().AccountList(nym);
-                widget.SetCallback([&]() {
-                    auto print = [&](const auto& row) {
-                        auto& previous = cache[row->Unit()];
-                        auto current = row->Balance();
-
-                        if (previous != current) {
-                            ot::LogOutput(row->NotaryName())(": ")(
-                                row->DisplayBalance())
-                                .Flush();
-                        }
-
-                        previous = current;
-                    };
-                    auto row = widget.First();
-
-                    if (false == row->Valid()) { return; }
-
-                    print(row);
-
-                    while (false == row->Last()) {
-                        row = widget.Next();
-                        print(row);
-                    }
-                });
-            }
-        }
+    if (opts.start_sync_server_) {
+        constexpr auto prefix = "tcp://0.0.0.0:";
+        const auto& port = opts.sync_port_;
+        client.Blockchain().StartSyncServer(
+            std::string{prefix} + std::to_string(port),
+            std::string{prefix} + std::to_string(port + 1));
     }
 
     ot::Join();
@@ -188,13 +128,10 @@ auto parse(
 constexpr auto help_{"help"};
 constexpr auto home_{"data_dir"};
 constexpr auto block_storage_{"block_storage"};
+constexpr auto sync_server_{"sync_server"};
+constexpr auto log_level_{OPENTXS_ARG_LOGLEVEL};
 
-auto process_arguments(
-    Enabled& enabled,
-    Disabled& disabled,
-    int& blockLevel,
-    bool& help,
-    std::string& home) noexcept -> void
+auto process_arguments(Options& opts) noexcept -> void
 {
     auto map = std::map<std::string, Type>{};
 
@@ -205,18 +142,37 @@ auto process_arguments(
     }
 
     auto seed = std::string{};
+    auto& otargs = opts.ot_;
+    auto& enabled = opts.enabled_chains_;
+    auto& syncPort = opts.sync_port_;
+    auto& disabled = otargs[OPENTXS_ARG_DISABLED_BLOCKCHAINS];
+    auto& home = otargs[OPENTXS_ARG_HOME];
+    auto blockLevel = int{0};
+    auto logLevel = int{0};
 
     for (const auto& [name, value] : variables()) {
         if (name == help_) {
-            help = true;
+            opts.show_help_ = true;
         } else if (name == block_storage_) {
             try {
-                blockLevel = value.as<int>();
+                blockLevel =
+                    std::max(blockLevel, value.as<decltype(blockLevel)>());
             } catch (...) {
             }
         } else if (name == home_) {
             try {
-                home = value.as<std::string>();
+                home.emplace(value.as<std::string>());
+            } catch (...) {
+            }
+        } else if (name == sync_server_) {
+            try {
+                syncPort = value.as<decltype(opts.sync_port_)>();
+                blockLevel = 2;
+            } catch (...) {
+            }
+        } else if (name == log_level_) {
+            try {
+                logLevel = value.as<decltype(logLevel)>();
             } catch (...) {
             }
         } else {
@@ -229,9 +185,26 @@ auto process_arguments(
             }
         }
     }
+
+    if (0 == disabled.size()) {
+        otargs.erase(OPENTXS_ARG_DISABLED_BLOCKCHAINS);
+    }
+
+    if (0 == home.size()) { otargs.erase(OPENTXS_ARG_HOME); }
+
+    otargs[OPENTXS_ARG_BLOCK_STORAGE_LEVEL].emplace(std::to_string(blockLevel));
+    opts.start_sync_server_ =
+        (0 < syncPort) &&
+        (std::numeric_limits<std::uint16_t>::max() > syncPort);
+
+    if (opts.start_sync_server_) {
+        otargs[OPENTXS_ARG_BLOCKCHAIN_SYNC].emplace("");
+    }
+
+    otargs[OPENTXS_ARG_LOGLEVEL].emplace(std::to_string(logLevel));
 }
 
-auto read_options(int argc, char** argv) noexcept -> void
+auto read_options(int argc, char** argv) noexcept -> bool
 {
     options().add_options()(help_, "Display this message");
     options().add_options()(
@@ -244,6 +217,16 @@ auto read_options(int argc, char** argv) noexcept -> void
         po::value<int>(),
         "Block persistence level.\n    0: do not save any blocks\n    1: save "
         "blocks downloaded by the wallet\n    2: download and save all blocks");
+    options().add_options()(
+        sync_server_,
+        po::value<int>(),
+        "Starting TCP port to use for sync server. Two ports will be "
+        "allocated. Implies --block_storage=2");
+    options().add_options()(
+        log_level_,
+        po::value<int>(),
+        "Log verbosity. Valid values are -1 through 5. Higher numbers are more "
+        "verbose. Default value is 0");
 
     for (const auto& chain : ot::blockchain::SupportedChains()) {
         auto ticker = ot::blockchain::TickerSymbol(chain);
@@ -260,8 +243,12 @@ auto read_options(int argc, char** argv) noexcept -> void
     try {
         po::store(po::parse_command_line(argc, argv, options()), variables());
         po::notify(variables());
+
+        return true;
     } catch (po::error& e) {
         std::cerr << "ERROR: " << e.what() << "\n\n" << options() << std::endl;
+
+        return false;
     }
 }
 

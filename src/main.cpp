@@ -25,6 +25,7 @@ struct Options {
     bool show_help_{};
     int sync_port_{};
     bool start_sync_server_{};
+    std::string sync_server_public_ip_{};
 };
 
 po::variables_map* variables_{};
@@ -56,6 +57,12 @@ int main(int argc, char* argv[])
         return 0;
     }
 
+    if (opts.start_sync_server_ && opts.sync_server_public_ip_.empty()) {
+        std::cout << "Mandatory argument --public_addr not specified\n";
+
+        return 1;
+    }
+
     ot::Signals::Block();
     const auto& ot = ot::InitContext(opts.ot_);
     ot.HandleSignals();
@@ -66,11 +73,18 @@ int main(int argc, char* argv[])
     }
 
     if (opts.start_sync_server_) {
-        constexpr auto prefix = "tcp://0.0.0.0:";
+        constexpr auto prefix = "tcp://";
+        constexpr auto internal = "0.0.0.0";
+        constexpr auto sep = ":";
         const auto& port = opts.sync_port_;
+        const auto nextport{port + 1};
         client.Blockchain().StartSyncServer(
-            std::string{prefix} + std::to_string(port),
-            std::string{prefix} + std::to_string(port + 1));
+            std::string{prefix} + internal + sep + std::to_string(port),
+            std::string{prefix} + opts.sync_server_public_ip_ + sep +
+                std::to_string(port),
+            std::string{prefix} + internal + sep + std::to_string(nextport),
+            std::string{prefix} + opts.sync_server_public_ip_ + sep +
+                std::to_string(nextport));
     }
 
     ot::Join();
@@ -129,6 +143,7 @@ constexpr auto help_{"help"};
 constexpr auto home_{"data_dir"};
 constexpr auto block_storage_{"block_storage"};
 constexpr auto sync_server_{"sync_server"};
+constexpr auto sync_public_ip_{"public_addr"};
 constexpr auto log_level_{OPENTXS_ARG_LOGLEVEL};
 
 auto process_arguments(Options& opts) noexcept -> void
@@ -145,6 +160,7 @@ auto process_arguments(Options& opts) noexcept -> void
     auto& otargs = opts.ot_;
     auto& enabled = opts.enabled_chains_;
     auto& syncPort = opts.sync_port_;
+    auto& publicIP = opts.sync_server_public_ip_;
     auto& disabled = otargs[OPENTXS_ARG_DISABLED_BLOCKCHAINS];
     auto& home = otargs[OPENTXS_ARG_HOME];
     auto blockLevel = int{0};
@@ -168,6 +184,11 @@ auto process_arguments(Options& opts) noexcept -> void
             try {
                 syncPort = value.as<decltype(opts.sync_port_)>();
                 blockLevel = 2;
+            } catch (...) {
+            }
+        } else if (name == sync_public_ip_) {
+            try {
+                publicIP = value.as<decltype(opts.sync_server_public_ip_)>();
             } catch (...) {
             }
         } else if (name == log_level_) {
@@ -222,6 +243,11 @@ auto read_options(int argc, char** argv) noexcept -> bool
         po::value<int>(),
         "Starting TCP port to use for sync server. Two ports will be "
         "allocated. Implies --block_storage=2");
+    options().add_options()(
+        sync_public_ip_,
+        po::value<std::string>(),
+        "IP address or domain name where clients can connect to reach the sync "
+        "server. Mandatory if --sync_server is specified.");
     options().add_options()(
         log_level_,
         po::value<int>(),

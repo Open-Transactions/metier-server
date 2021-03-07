@@ -44,12 +44,16 @@ print_build_details(OTBLOCKCHAIN_PEDANTIC_BUILD "")
 # -----------------------------------------------------------------------------
 # Dependencies
 
-find_package(Protobuf REQUIRED)
 find_package(opentxs REQUIRED)
-find_package(Boost REQUIRED program_options filesystem iostreams)
+find_package(Boost REQUIRED program_options)
+
+# Inherited by opentxs. May or may not be used but opentxs links against them
+# then these find_package calls must have been made.
+find_package(Boost QUIET OPTIONAL_COMPONENTS filesystem iostreams)
+find_package(Protobuf QUIET)
 find_package(
-  Qt5
-  COMPONENTS
+  Qt5 QUIET
+  OPTIONAL_COMPONENTS
     Core
     Gui
     Qml

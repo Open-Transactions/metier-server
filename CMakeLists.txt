@@ -28,8 +28,10 @@ endif()
 # -----------------------------------------------------------------------------
 # Options
 
-option(OTBLOCKCHAIN_PEDANTIC_BUILD "Treat compiler warnings as errors."
-       ${OTBLOCKCHAIN_PEDANTIC_DEFAULT})
+option(
+  OTBLOCKCHAIN_PEDANTIC_BUILD "Treat compiler warnings as errors."
+  ${OTBLOCKCHAIN_PEDANTIC_DEFAULT}
+)
 
 # -----------------------------------------------------------------------------
 # Set compiler options
@@ -47,18 +49,26 @@ print_build_details(OTBLOCKCHAIN_PEDANTIC_BUILD "")
 find_package(opentxs REQUIRED)
 find_package(Boost REQUIRED program_options)
 
-# Inherited by opentxs. May or may not be used but opentxs links against them
+# Inherited by opentxs. May or may not be used but if opentxs links against them
 # then these find_package calls must have been made.
-find_package(Boost QUIET OPTIONAL_COMPONENTS filesystem iostreams)
-find_package(Protobuf QUIET)
 find_package(
-  Qt5 QUIET
-  OPTIONAL_COMPONENTS
-    Core
-    Gui
-    Qml
-    Widgets
+  Boost 1.73.0 QUIET
+  COMPONENTS system filesystem thread iostreams
+  OPTIONAL_COMPONENTS stacktrace_basic
 )
+find_package(ZLIB QUIET)
+find_package(unofficial-zeromq QUIET)
+find_package(OpenSSL 1.0.1 QUIET)
+find_package(unofficial-secp256k1 QUIET)
+find_package(unofficial-sodium QUIET)
+find_package(Protobuf QUIET)
+find_package(lmdb QUIET)
+find_package(
+  Qt5
+  COMPONENTS Core Gui Qml Widgets
+  QUIET
+)
+find_package(SQLite3 QUIET)
 
 # -----------------------------------------------------------------------------
 # Source Definitions

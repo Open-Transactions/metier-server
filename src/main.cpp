@@ -236,7 +236,7 @@ auto read_options(int argc, char** argv) noexcept -> bool
     options().add_options()(
         home_,
         po::value<std::string>()->default_value(
-            ot::api::Context::SuggestFolder("otblockchain")),
+            ot::api::Context::SuggestFolder("metier-server")),
         "Path to data directory");
     options().add_options()(
         block_storage_,

@@ -5,25 +5,14 @@
 
 set(cxx-sources main.cpp)
 
-add_executable(otblockchain ${cxx-sources})
+add_executable(${PROJECT_NAME} ${cxx-sources})
 
 target_link_libraries(
-  otblockchain
+  ${PROJECT_NAME}
   PRIVATE
     Threads::Threads
     opentxs
     Boost::program_options
 )
 
-if(Qt5_FOUND)
-  target_link_libraries(
-    otblockchain
-    PRIVATE
-      Qt5::Core
-      Qt5::Gui
-      Qt5::Qml
-      Qt5::Widgets
-  )
-endif()
-
-install(TARGETS otblockchain)
+install(TARGETS ${PROJECT_NAME})

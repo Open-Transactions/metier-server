@@ -4,7 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 cmake_minimum_required(VERSION 3.14)
-project(otblockchain)
+project(metier-server)
 list(
   APPEND
   CMAKE_MODULE_PATH
@@ -26,30 +26,30 @@ if(CMAKE_BUILD_TYPE
    STREQUAL
    "Debug"
 )
-  set(OTBLOCKCHAIN_PEDANTIC_DEFAULT ON)
+  set(METIER_SERVER_PEDANTIC_DEFAULT ON)
   set(CMAKE_VERBOSE_MAKEFILE ON)
 else()
-  set(OTBLOCKCHAIN_PEDANTIC_DEFAULT OFF)
+  set(METIER_SERVER_PEDANTIC_DEFAULT OFF)
 endif()
 
 # -----------------------------------------------------------------------------
 # Options
 
 option(
-  OTBLOCKCHAIN_PEDANTIC_BUILD
+  METIER_SERVER_PEDANTIC_BUILD
   "Treat compiler warnings as errors."
-  ${OTBLOCKCHAIN_PEDANTIC_DEFAULT}
+  ${METIER_SERVER_PEDANTIC_DEFAULT}
 )
 
 # -----------------------------------------------------------------------------
 # Set compiler options
 
-set_compiler_flags(17 ${OTBLOCKCHAIN_PEDANTIC_BUILD})
+set_compiler_flags(17 ${METIER_SERVER_PEDANTIC_BUILD})
 
 # -----------------------------------------------------------------------------
 # Print system information and build options
 
-print_build_details(OTBLOCKCHAIN_PEDANTIC_BUILD "")
+print_build_details(METIER_SERVER_PEDANTIC_BUILD "")
 
 # -----------------------------------------------------------------------------
 # Dependencies

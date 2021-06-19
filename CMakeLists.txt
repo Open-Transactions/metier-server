@@ -5,7 +5,11 @@
 
 cmake_minimum_required(VERSION 3.14)
 project(otblockchain)
-list(APPEND CMAKE_MODULE_PATH "${${PROJECT_NAME}_SOURCE_DIR}/cmake")
+list(
+  APPEND
+  CMAKE_MODULE_PATH
+  "${${PROJECT_NAME}_SOURCE_DIR}/cmake"
+)
 include(open-transactions-common)
 
 # -----------------------------------------------------------------------------
@@ -18,7 +22,10 @@ update_git_submodules()
 # -----------------------------------------------------------------------------
 # Set option defaults
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE
+   STREQUAL
+   "Debug"
+)
   set(OTBLOCKCHAIN_PEDANTIC_DEFAULT ON)
   set(CMAKE_VERBOSE_MAKEFILE ON)
 else()
@@ -29,7 +36,8 @@ endif()
 # Options
 
 option(
-  OTBLOCKCHAIN_PEDANTIC_BUILD "Treat compiler warnings as errors."
+  OTBLOCKCHAIN_PEDANTIC_BUILD
+  "Treat compiler warnings as errors."
   ${OTBLOCKCHAIN_PEDANTIC_DEFAULT}
 )
 
@@ -46,29 +54,53 @@ print_build_details(OTBLOCKCHAIN_PEDANTIC_BUILD "")
 # -----------------------------------------------------------------------------
 # Dependencies
 
-find_package(opentxs REQUIRED)
-find_package(Boost REQUIRED program_options)
+find_package(
+  opentxs
+  CONFIG
+  REQUIRED
+)
+find_package(
+  Boost
+  REQUIRED
+  program_options
+)
 
 # Inherited by opentxs. May or may not be used but if opentxs links against them
 # then these find_package calls must have been made.
+
 find_package(
-  Boost 1.73.0 QUIET
-  COMPONENTS system filesystem thread iostreams
+  Boost
+  1.73.0
+  QUIET
+  COMPONENTS
+    system
+    filesystem
+    thread
+    iostreams
   OPTIONAL_COMPONENTS stacktrace_basic
 )
 find_package(ZLIB QUIET)
 find_package(unofficial-zeromq QUIET)
-find_package(OpenSSL 1.0.1 QUIET)
+find_package(
+  OpenSSL
+  1.0.1
+  QUIET
+)
 find_package(unofficial-secp256k1 QUIET)
 find_package(unofficial-sodium QUIET)
 find_package(Protobuf QUIET)
 find_package(lmdb QUIET)
 find_package(
   Qt5
-  COMPONENTS Core Gui Qml Widgets
+  COMPONENTS
+    Core
+    Gui
+    Qml
+    Widgets
   QUIET
 )
 find_package(SQLite3 QUIET)
+find_package(opendht QUIET)
 
 # -----------------------------------------------------------------------------
 # Source Definitions

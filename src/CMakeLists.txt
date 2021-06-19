@@ -8,12 +8,21 @@ set(cxx-sources main.cpp)
 add_executable(otblockchain ${cxx-sources})
 
 target_link_libraries(
-  otblockchain PRIVATE Threads::Threads opentxs Boost::program_options
+  otblockchain
+  PRIVATE
+    Threads::Threads
+    opentxs
+    Boost::program_options
 )
 
 if(Qt5_FOUND)
   target_link_libraries(
-    otblockchain PRIVATE Qt5::Core Qt5::Gui Qt5::Qml Qt5::Widgets
+    otblockchain
+    PRIVATE
+      Qt5::Core
+      Qt5::Gui
+      Qt5::Qml
+      Qt5::Widgets
   )
 endif()
 

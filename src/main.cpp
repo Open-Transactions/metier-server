@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     const auto& client = ot.StartClient(opts.ot_, 0);
 
     for (const auto& [chain, seed] : opts.enabled_chains_) {
-        client.Blockchain().Enable(chain, seed);
+        client.Network().Blockchain().Enable(chain, seed);
     }
 
     if (opts.start_sync_server_) {
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
         constexpr auto sep = ":";
         const auto& port = opts.sync_port_;
         const auto nextport{port + 1};
-        client.Blockchain().StartSyncServer(
+        client.Network().Blockchain().StartSyncServer(
             std::string{prefix} + internal + sep + std::to_string(port),
             std::string{prefix} + opts.sync_server_public_ip_ + sep +
                 std::to_string(port),
@@ -139,6 +139,7 @@ auto parse(
     }
 }
 
+constexpr auto all_{"all"};
 constexpr auto help_{"help"};
 constexpr auto home_{"data_dir"};
 constexpr auto block_storage_{"block_storage"};
@@ -169,6 +170,10 @@ auto process_arguments(Options& opts) noexcept -> void
     for (const auto& [name, value] : variables()) {
         if (name == help_) {
             opts.show_help_ = true;
+        } else if (name == all_) {
+            for (const auto chain : ot::blockchain::SupportedChains()) {
+                opts.enabled_chains_[chain];
+            }
         } else if (name == block_storage_) {
             try {
                 blockLevel =
@@ -253,6 +258,10 @@ auto read_options(int argc, char** argv) noexcept -> bool
         po::value<int>(),
         "Log verbosity. Valid values are -1 through 5. Higher numbers are more "
         "verbose. Default value is 0");
+    options().add_options()(
+        all_,
+        "Enable all supported blockchains. Seed nodes still be set by passing "
+        "the option for the appropriate chain.");
 
     for (const auto& chain : ot::blockchain::SupportedChains()) {
         auto ticker = ot::blockchain::TickerSymbol(chain);

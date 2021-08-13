@@ -17,10 +17,16 @@ namespace po = boost::program_options;
 
 using Type = ot::blockchain::Type;
 using Enabled = std::map<Type, std::string>;
-using Disabled = std::set<std::string>;
+using Disabled = std::set<Type>;
+
+constexpr auto all_{"all"};
+constexpr auto help_{"help"};
+constexpr auto home_{"data_dir"};
+constexpr auto sync_public_ip_{"public_addr"};
+constexpr auto sync_server_{"sync_server"};
 
 struct Options {
-    ot::ArgList ot_{};
+    ot::Options ot_{};
     Enabled enabled_chains_{};
     bool show_help_{};
     int sync_port_{};
@@ -28,31 +34,27 @@ struct Options {
     std::string sync_server_public_ip_{};
 };
 
-po::variables_map* variables_{};
-po::options_description* options_{};
-
-auto cleanup_globals() noexcept -> void;
-auto options() noexcept -> po::options_description&;
+auto options() noexcept -> const po::options_description&;
 auto lower(std::string& str) noexcept -> std::string&;
 auto parse(
     const std::string& input,
     const Type type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void;
-auto process_arguments(Options& opts) noexcept -> void;
+auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void;
 auto read_options(int argc, char** argv) noexcept -> bool;
 auto variables() noexcept -> po::variables_map&;
 
-int main(int argc, char* argv[])
+auto main(int argc, char* argv[]) -> int
 {
     auto opts = Options{};
 
     if (false == read_options(argc, argv)) { return 1; }
 
-    process_arguments(opts);
+    process_arguments(opts, argc, argv);
 
     if (opts.show_help_) {
-        std::cout << options() << "\n";
+        std::cout << ::options() << '\n' << opts.ot_.HelpText() << '\n';
 
         return 0;
     }
@@ -88,22 +90,8 @@ int main(int argc, char* argv[])
     }
 
     ot::Join();
-    cleanup_globals();
 
     return 0;
-}
-
-auto cleanup_globals() noexcept -> void
-{
-    if (nullptr != variables_) {
-        delete variables_;
-        variables_ = nullptr;
-    }
-
-    if (nullptr != options_) {
-        delete options_;
-        options_ = nullptr;
-    }
 }
 
 auto lower(std::string& s) noexcept -> std::string&
@@ -115,13 +103,46 @@ auto lower(std::string& s) noexcept -> std::string&
     return s;
 }
 
-auto options() noexcept -> po::options_description&
+auto options() noexcept -> const po::options_description&
 {
-    if (nullptr == options_) {
-        options_ = new po::options_description{"Options"};
-    }
+    static const auto output = [] {
+        auto out = po::options_description{"Metier-server options"};
+        out.add_options()(help_, "Display this message");
+        out.add_options()(
+            home_,
+            po::value<std::string>()->default_value(
+                ot::api::Context::SuggestFolder("metier-server")),
+            "Path to data directory");
+        out.add_options()(
+            sync_server_,
+            po::value<int>(),
+            "Starting TCP port to use for sync server. Two ports will be "
+            "allocated. Implies --blockchain_storage=2");
+        out.add_options()(
+            sync_public_ip_,
+            po::value<std::string>(),
+            "IP address or domain name where clients can connect to reach the "
+            "sync server. Mandatory if --sync_server is specified.");
+        out.add_options()(
+            all_,
+            "Enable all supported blockchains. Seed nodes may still be set by "
+            "passing the option for the appropriate chain.");
 
-    return *options_;
+        for (const auto& chain : ot::blockchain::SupportedChains()) {
+            auto ticker = ot::blockchain::TickerSymbol(chain);
+            auto message = std::stringstream{};
+            message << "Enable " << ot::blockchain::DisplayString(chain)
+                    << " blockchain.\nOptionally specify ip address of seed "
+                       "node or \"off\" to disable";
+            out.add_options()(
+                lower(ticker).c_str(),
+                po::value<std::string>()->implicit_value(""),
+                message.str().c_str());
+        }
+        return out;
+    }();
+
+    return output;
 }
 
 auto parse(
@@ -133,21 +154,13 @@ auto parse(
     constexpr auto off{"off"};
 
     if (input == off) {
-        disabled.emplace(std::to_string(static_cast<std::uint32_t>(type)));
+        disabled.emplace(type);
     } else {
         enabled[type] = input;
     }
 }
 
-constexpr auto all_{"all"};
-constexpr auto help_{"help"};
-constexpr auto home_{"data_dir"};
-constexpr auto block_storage_{"block_storage"};
-constexpr auto sync_server_{"sync_server"};
-constexpr auto sync_public_ip_{"public_addr"};
-constexpr auto log_level_{OPENTXS_ARG_LOGLEVEL};
-
-auto process_arguments(Options& opts) noexcept -> void
+auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 {
     auto map = std::map<std::string, Type>{};
 
@@ -159,13 +172,12 @@ auto process_arguments(Options& opts) noexcept -> void
 
     auto seed = std::string{};
     auto& otargs = opts.ot_;
+    otargs.SetHome(ot::api::Context::SuggestFolder("metier-server").c_str());
+    otargs.ParseCommandLine(argc, argv);
     auto& enabled = opts.enabled_chains_;
     auto& syncPort = opts.sync_port_;
     auto& publicIP = opts.sync_server_public_ip_;
-    auto& disabled = otargs[OPENTXS_ARG_DISABLED_BLOCKCHAINS];
-    auto& home = otargs[OPENTXS_ARG_HOME];
-    auto blockLevel = int{0};
-    auto logLevel = int{0};
+    auto disabled = std::set<Type>{};
 
     for (const auto& [name, value] : variables()) {
         if (name == help_) {
@@ -174,31 +186,20 @@ auto process_arguments(Options& opts) noexcept -> void
             for (const auto chain : ot::blockchain::SupportedChains()) {
                 opts.enabled_chains_[chain];
             }
-        } else if (name == block_storage_) {
-            try {
-                blockLevel =
-                    std::max(blockLevel, value.as<decltype(blockLevel)>());
-            } catch (...) {
-            }
         } else if (name == home_) {
             try {
-                home.emplace(value.as<std::string>());
+                otargs.SetHome(value.as<std::string>().c_str());
             } catch (...) {
             }
         } else if (name == sync_server_) {
             try {
                 syncPort = value.as<decltype(opts.sync_port_)>();
-                blockLevel = 2;
+                otargs.SetBlockchainStorageLevel(2);
             } catch (...) {
             }
         } else if (name == sync_public_ip_) {
             try {
                 publicIP = value.as<decltype(opts.sync_server_public_ip_)>();
-            } catch (...) {
-            }
-        } else if (name == log_level_) {
-            try {
-                logLevel = value.as<decltype(logLevel)>();
             } catch (...) {
             }
         } else {
@@ -212,71 +213,22 @@ auto process_arguments(Options& opts) noexcept -> void
         }
     }
 
-    if (0 == disabled.size()) {
-        otargs.erase(OPENTXS_ARG_DISABLED_BLOCKCHAINS);
-    }
+    for (const auto chain : disabled) { otargs.DisableBlockchain(chain); }
 
-    if (0 == home.size()) { otargs.erase(OPENTXS_ARG_HOME); }
-
-    otargs[OPENTXS_ARG_BLOCK_STORAGE_LEVEL].emplace(std::to_string(blockLevel));
     opts.start_sync_server_ =
         (0 < syncPort) &&
         (std::numeric_limits<std::uint16_t>::max() > syncPort);
-
-    if (opts.start_sync_server_) {
-        otargs[OPENTXS_ARG_BLOCKCHAIN_SYNC].emplace("");
-    }
-
-    otargs[OPENTXS_ARG_LOGLEVEL].emplace(std::to_string(logLevel));
+    otargs.SetBlockchainSyncEnabled(opts.start_sync_server_);
 }
 
 auto read_options(int argc, char** argv) noexcept -> bool
 {
-    options().add_options()(help_, "Display this message");
-    options().add_options()(
-        home_,
-        po::value<std::string>()->default_value(
-            ot::api::Context::SuggestFolder("metier-server")),
-        "Path to data directory");
-    options().add_options()(
-        block_storage_,
-        po::value<int>(),
-        "Block persistence level.\n    0: do not save any blocks\n    1: save "
-        "blocks downloaded by the wallet\n    2: download and save all blocks");
-    options().add_options()(
-        sync_server_,
-        po::value<int>(),
-        "Starting TCP port to use for sync server. Two ports will be "
-        "allocated. Implies --block_storage=2");
-    options().add_options()(
-        sync_public_ip_,
-        po::value<std::string>(),
-        "IP address or domain name where clients can connect to reach the sync "
-        "server. Mandatory if --sync_server is specified.");
-    options().add_options()(
-        log_level_,
-        po::value<int>(),
-        "Log verbosity. Valid values are -1 through 5. Higher numbers are more "
-        "verbose. Default value is 0");
-    options().add_options()(
-        all_,
-        "Enable all supported blockchains. Seed nodes still be set by passing "
-        "the option for the appropriate chain.");
-
-    for (const auto& chain : ot::blockchain::SupportedChains()) {
-        auto ticker = ot::blockchain::TickerSymbol(chain);
-        auto message = std::stringstream{};
-        message << "Enable " << ot::blockchain::DisplayString(chain)
-                << " blockchain.\nOptionally specify ip address of seed node "
-                   "or \"off\" to disable";
-        options().add_options()(
-            lower(ticker).c_str(),
-            po::value<std::string>()->implicit_value(""),
-            message.str().c_str());
-    }
-
     try {
-        po::store(po::parse_command_line(argc, argv, options()), variables());
+        const auto parsed = po::command_line_parser(argc, argv)
+                                .options(options())
+                                .allow_unregistered()
+                                .run();
+        po::store(parsed, variables());
         po::notify(variables());
 
         return true;
@@ -289,7 +241,7 @@ auto read_options(int argc, char** argv) noexcept -> bool
 
 auto variables() noexcept -> po::variables_map&
 {
-    if (nullptr == variables_) { variables_ = new po::variables_map; }
+    static auto output = po::variables_map{};
 
-    return *variables_;
+    return output;
 }

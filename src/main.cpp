@@ -89,6 +89,22 @@ auto main(int argc, char* argv[]) -> int
                 std::to_string(nextport));
     }
 
+    client.Schedule(std::chrono::seconds(15), [&]() -> void {
+        for (const auto& [chain, seed] : opts.enabled_chains_) {
+            const auto& manager = client.Network().Blockchain().GetChain(chain);
+
+            const auto& headeroracle = manager.HeaderOracle();
+            const auto bestchain = headeroracle.BestChain();
+            const auto& filteroracle = manager.FilterOracle();
+            const auto& filtertip =
+                filteroracle.FilterTip(filteroracle.DefaultType());
+
+            std::cout << DisplayString(chain) << ": header tip "
+                      << bestchain.first << " filter tip " << filtertip.first
+                      << std::endl;
+        }
+    });
+
     ot::Join();
 
     return 0;

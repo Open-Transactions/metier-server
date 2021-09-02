@@ -7,6 +7,7 @@
 #include <opentxs/opentxs.hpp>
 #include <algorithm>
 #include <cctype>
+#include <iomanip>
 #include <map>
 #include <sstream>
 #include <string>
@@ -89,19 +90,67 @@ auto main(int argc, char* argv[]) -> int
                 std::to_string(nextport));
     }
 
-    client.Schedule(std::chrono::seconds(15), [&]() -> void {
-        for (const auto& [chain, seed] : opts.enabled_chains_) {
-            const auto& manager = client.Network().Blockchain().GetChain(chain);
+    client.Schedule(std::chrono::seconds(30), [&]() -> void {
+        static const auto widthChain = [] {
+            auto out = std::size_t{0};
 
-            const auto& headeroracle = manager.HeaderOracle();
-            const auto bestchain = headeroracle.BestChain();
-            const auto& filteroracle = manager.FilterOracle();
-            const auto& filtertip =
-                filteroracle.FilterTip(filteroracle.DefaultType());
+            for (const auto chain : ot::blockchain::DefinedChains()) {
+                out =
+                    std::max(out, ot::blockchain::DisplayString(chain).size());
+            }
 
-            std::cout << DisplayString(chain) << ": header tip "
-                      << bestchain.first << " filter tip " << filtertip.first
-                      << std::endl;
+            return static_cast<int>(out + 2);
+        }();
+        static constexpr auto width{10};
+        const auto header1 = [&] {
+            auto out = std::stringstream{};
+            out << std::setw(widthChain) << " ";
+            out << std::setw(width) << "peer ";
+            out << std::setw(width) << "block ";
+            out << std::setw(width) << "block";
+            out << std::setw(width) << "cfilter";
+            out << std::setw(width) << "sync ";
+
+            return out.str();
+        }();
+        const auto header2 = [&] {
+            auto out = std::stringstream{};
+            out << std::setw(widthChain) << " ";
+            out << std::setw(width) << "count";
+            out << std::setw(width) << "headers";
+            out << std::setw(width) << "chain";
+            out << std::setw(width) << "chain ";
+            out << std::setw(width) << "server";
+
+            return out.str();
+        }();
+
+        std::cout << '\n';
+        std::cout << header1 << '\n';
+        std::cout << header2 << '\n';
+
+        for (const auto& data : opts.enabled_chains_) {
+            const auto& [chain, seed] = data;
+            const auto& node = client.Network().Blockchain().GetChain(chain);
+            const auto& headers = node.HeaderOracle();
+            const auto& blocks = node.BlockOracle();
+            const auto& filters = node.FilterOracle();
+            const auto status = [&] {
+                auto out = std::stringstream{};
+                out << std::setw(widthChain) << DisplayString(data.first);
+                out << std::setw(width)
+                    << std::to_string(node.GetVerifiedPeerCount());
+                out << std::setw(width)
+                    << std::to_string(headers.BestChain().first);
+                out << std::setw(width) << std::to_string(blocks.Tip().first);
+                out << std::setw(width)
+                    << std::to_string(
+                           filters.FilterTip(filters.DefaultType()).first);
+                out << std::setw(width) << std::to_string(node.SyncTip().first);
+
+                return out.str();
+            }();
+            std::cout << status << '\n';
         }
     });
 

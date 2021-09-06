@@ -125,7 +125,6 @@ auto main(int argc, char* argv[]) -> int
             return out.str();
         }();
 
-        std::cout << '\n';
         std::cout << header1 << '\n';
         std::cout << header2 << '\n';
 
@@ -152,6 +151,8 @@ auto main(int argc, char* argv[]) -> int
             }();
             std::cout << status << '\n';
         }
+
+        std::cout << std::endl;
     });
 
     ot::Join();

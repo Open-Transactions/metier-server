@@ -69,7 +69,7 @@ auto main(int argc, char* argv[]) -> int
     ot::Signals::Block();
     const auto& ot = ot::InitContext(opts.ot_);
     ot.HandleSignals();
-    const auto& client = ot.StartClient(opts.ot_, 0);
+    const auto& client = ot.StartClientSession(opts.ot_, 0);
 
     for (const auto& [chain, seed] : opts.enabled_chains_) {
         client.Network().Blockchain().Enable(chain, seed);

@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 The Open-Transactions developers
+// Copyright (c) 2019-2022 The Open-Transactions developers
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -66,7 +66,7 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    ot::Signals::Block();
+    ot::api::Context::PrepareSignalHandling();
     const auto& ot = ot::InitContext(opts.ot_);
     ot.HandleSignals();
     const auto& client = ot.StartClientSession(opts.ot_, 0);

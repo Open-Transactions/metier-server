@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.19.4)
 project(metier-server)
 list(
   APPEND
@@ -68,17 +68,19 @@ find_package(
 # Inherited by opentxs. May or may not be used but if opentxs links against them
 # then these find_package calls must have been made.
 
-find_package(
-  Boost
-  1.73.0
-  QUIET
-  COMPONENTS
-    system
-    filesystem
-    thread
-    iostreams
-  OPTIONAL_COMPONENTS stacktrace_basic
-)
+  find_package(
+    Boost
+    1.75.0
+    QUIET
+    OPTIONAL_COMPONENTS
+      container
+      filesystem
+      iostreams
+      json
+      stacktrace_basic
+      system
+      thread
+  )
 find_package(ZLIB QUIET)
 find_package(unofficial-zeromq QUIET)
 find_package(

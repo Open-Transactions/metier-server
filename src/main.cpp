@@ -96,7 +96,7 @@ auto main(int argc, char* argv[]) -> int
 
             for (const auto chain : ot::blockchain::DefinedChains()) {
                 out =
-                    std::max(out, ot::blockchain::DisplayString(chain).size());
+                    std::max(out, ot::blockchain::print(chain).size());
             }
 
             return static_cast<int>(out + 2);
@@ -136,7 +136,7 @@ auto main(int argc, char* argv[]) -> int
             const auto& filters = node.FilterOracle();
             const auto status = [&] {
                 auto out = std::stringstream{};
-                out << std::setw(widthChain) << DisplayString(data.first);
+                out << std::setw(widthChain) << print(data.first);
                 out << std::setw(width)
                     << std::to_string(node.GetVerifiedPeerCount());
                 out << std::setw(width)
@@ -197,7 +197,7 @@ auto options() noexcept -> const po::options_description&
         for (const auto& chain : ot::blockchain::SupportedChains()) {
             auto ticker = ot::blockchain::TickerSymbol(chain);
             auto message = std::stringstream{};
-            message << "Enable " << ot::blockchain::DisplayString(chain)
+            message << "Enable " << ot::blockchain::print(chain)
                     << " blockchain.\nOptionally specify ip address of seed "
                        "node or \"off\" to disable";
             out.add_options()(

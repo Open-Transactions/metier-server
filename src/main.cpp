@@ -221,7 +221,8 @@ auto parse(
 
     if (input == off) {
         disabled.emplace(type);
-    } else {
+        enabled.erase(type);
+    } else if (0u == disabled.count(type)) {
         enabled[type] = input;
     }
 }
@@ -250,7 +251,9 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
             opts.show_help_ = true;
         } else if (name == all_) {
             for (const auto chain : ot::blockchain::SupportedChains()) {
-                opts.enabled_chains_[chain];
+                if (0u == disabled.count(chain)) {
+                    opts.enabled_chains_[chain];
+                }
             }
         } else if (name == home_) {
             try {

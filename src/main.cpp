@@ -17,8 +17,8 @@ namespace ot = opentxs;
 namespace po = boost::program_options;
 
 using Type = ot::blockchain::Type;
-using Enabled = std::map<Type, std::string>;
-using Disabled = std::set<Type>;
+using Enabled = ot::Map<Type, ot::UnallocatedCString>;
+using Disabled = ot::Set<Type>;
 
 constexpr auto all_{"all"};
 constexpr auto help_{"help"};
@@ -32,13 +32,13 @@ struct Options {
     bool show_help_{};
     int sync_port_{};
     bool start_sync_server_{};
-    std::string sync_server_public_ip_{};
+    ot::UnallocatedCString sync_server_public_ip_{};
 };
 
 auto options() noexcept -> const po::options_description&;
-auto lower(std::string& str) noexcept -> std::string&;
+auto lower(ot::UnallocatedCString& str) noexcept -> ot::UnallocatedCString&;
 auto parse(
-    const std::string& input,
+    const ot::UnallocatedCString& input,
     const Type type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void;
@@ -82,11 +82,13 @@ auto main(int argc, char* argv[]) -> int
         const auto& port = opts.sync_port_;
         const auto nextport{port + 1};
         client.Network().Blockchain().StartSyncServer(
-            std::string{prefix} + internal + sep + std::to_string(port),
-            std::string{prefix} + opts.sync_server_public_ip_ + sep +
+            ot::UnallocatedCString{prefix} + internal + sep +
                 std::to_string(port),
-            std::string{prefix} + internal + sep + std::to_string(nextport),
-            std::string{prefix} + opts.sync_server_public_ip_ + sep +
+            ot::UnallocatedCString{prefix} + opts.sync_server_public_ip_ + sep +
+                std::to_string(port),
+            ot::UnallocatedCString{prefix} + internal + sep +
+                std::to_string(nextport),
+            ot::UnallocatedCString{prefix} + opts.sync_server_public_ip_ + sep +
                 std::to_string(nextport));
     }
 
@@ -140,12 +142,12 @@ auto main(int argc, char* argv[]) -> int
                 out << std::setw(width)
                     << std::to_string(node.GetVerifiedPeerCount());
                 out << std::setw(width)
-                    << std::to_string(headers.BestChain().first);
-                out << std::setw(width) << std::to_string(blocks.Tip().first);
+                    << std::to_string(headers.BestChain().height_);
+                out << std::setw(width) << std::to_string(blocks.Tip().height_);
                 out << std::setw(width)
                     << std::to_string(
-                           filters.FilterTip(filters.DefaultType()).first);
-                out << std::setw(width) << std::to_string(node.SyncTip().first);
+                           filters.FilterTip(filters.DefaultType()).height_);
+                out << std::setw(width) << std::to_string(node.SyncTip().height_);
 
                 return out.str();
             }();
@@ -160,7 +162,7 @@ auto main(int argc, char* argv[]) -> int
     return 0;
 }
 
-auto lower(std::string& s) noexcept -> std::string&
+auto lower(ot::UnallocatedCString& s) noexcept -> ot::UnallocatedCString&
 {
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
         return std::tolower(c);
@@ -176,17 +178,17 @@ auto options() noexcept -> const po::options_description&
         out.add_options()(help_, "Display this message");
         out.add_options()(
             home_,
-            po::value<std::string>()->default_value(
+            po::value<ot::UnallocatedCString>()->default_value(
                 ot::api::Context::SuggestFolder("metier-server")),
             "Path to data directory");
         out.add_options()(
             sync_server_,
             po::value<int>(),
             "Starting TCP port to use for sync server. Two ports will be "
-            "allocated. Implies --blockchain_storage=2");
+            "allocated.");
         out.add_options()(
             sync_public_ip_,
-            po::value<std::string>(),
+            po::value<ot::UnallocatedCString>(),
             "IP address or domain name where clients can connect to reach the "
             "sync server. Mandatory if --sync_server is specified.");
         out.add_options()(
@@ -202,7 +204,7 @@ auto options() noexcept -> const po::options_description&
                        "node or \"off\" to disable";
             out.add_options()(
                 lower(ticker).c_str(),
-                po::value<std::string>()->implicit_value(""),
+                po::value<ot::UnallocatedCString>()->implicit_value(""),
                 message.str().c_str());
         }
         return out;
@@ -212,7 +214,7 @@ auto options() noexcept -> const po::options_description&
 }
 
 auto parse(
-    const std::string& input,
+    const ot::UnallocatedCString& input,
     const Type type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void
@@ -229,7 +231,7 @@ auto parse(
 
 auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 {
-    auto map = std::map<std::string, Type>{};
+    auto map = ot::Map<ot::UnallocatedCString, Type>{};
 
     for (const auto& chain : ot::blockchain::SupportedChains()) {
         auto ticker = ot::blockchain::TickerSymbol(chain);
@@ -237,14 +239,15 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
         map.emplace(std::move(ticker), chain);
     }
 
-    auto seed = std::string{};
+    auto seed = ot::UnallocatedCString{};
     auto& otargs = opts.ot_;
     otargs.SetHome(ot::api::Context::SuggestFolder("metier-server").c_str());
+    otargs.SetBlockchainProfile(ot::BlockchainProfile::server);
     otargs.ParseCommandLine(argc, argv);
     auto& enabled = opts.enabled_chains_;
     auto& syncPort = opts.sync_port_;
     auto& publicIP = opts.sync_server_public_ip_;
-    auto disabled = std::set<Type>{};
+    auto disabled = ot::Set<Type>{};
 
     for (const auto& [name, value] : variables()) {
         if (name == help_) {
@@ -257,13 +260,13 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
             }
         } else if (name == home_) {
             try {
-                otargs.SetHome(value.as<std::string>().c_str());
+                otargs.SetHome(value.as<ot::UnallocatedCString>().c_str());
             } catch (...) {
             }
         } else if (name == sync_server_) {
             try {
                 syncPort = value.as<decltype(opts.sync_port_)>();
-                otargs.SetBlockchainStorageLevel(2);
+                otargs.SetBlockchainProfile(ot::BlockchainProfile::server);
             } catch (...) {
             }
         } else if (name == sync_public_ip_) {
@@ -275,7 +278,11 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
             try {
                 auto input{name};
                 const auto chain = map.at(lower(input));
-                parse(value.as<std::string>(), chain, enabled, disabled);
+                parse(
+                    value.as<ot::UnallocatedCString>(),
+                    chain,
+                    enabled,
+                    disabled);
             } catch (...) {
                 continue;
             }

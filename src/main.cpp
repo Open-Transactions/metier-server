@@ -132,7 +132,11 @@ auto main(int argc, char* argv[]) -> int
 
         for (const auto& data : opts.enabled_chains_) {
             const auto& [chain, seed] = data;
-            const auto& node = client.Network().Blockchain().GetChain(chain);
+            const auto handle = client.Network().Blockchain().GetChain(chain);
+
+            if (false == handle.IsValid()) { continue; }
+
+            const auto& node = handle.get();
             const auto& headers = node.HeaderOracle();
             const auto& blocks = node.BlockOracle();
             const auto& filters = node.FilterOracle();

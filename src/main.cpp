@@ -81,7 +81,7 @@ auto main(int argc, char* argv[]) -> int
         constexpr auto sep = ":";
         const auto& port = opts.sync_port_;
         const auto nextport{port + 1};
-        client.Network().Blockchain().StartSyncServer(
+        client.Network().OTDHT().StartListener(
             ot::UnallocatedCString{prefix} + internal + sep +
                 std::to_string(port),
             ot::UnallocatedCString{prefix} + opts.sync_server_public_ip_ + sep +

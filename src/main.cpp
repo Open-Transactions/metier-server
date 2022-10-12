@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cctype>
 #include <iomanip>
+#include <iostream>
 #include <map>
 #include <sstream>
 #include <string>

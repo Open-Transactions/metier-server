@@ -3,7 +3,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include <boost/program_options.hpp>
+#pragma GCC diagnostic pop
 #include <opentxs/opentxs.hpp>
 #include <algorithm>
 #include <cctype>

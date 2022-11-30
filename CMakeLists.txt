@@ -68,19 +68,19 @@ find_package(
 # Inherited by opentxs. May or may not be used but if opentxs links against them
 # then these find_package calls must have been made.
 
-  find_package(
-    Boost
-    1.75.0
-    QUIET
-    OPTIONAL_COMPONENTS
-      container
-      filesystem
-      iostreams
-      json
-      stacktrace_basic
-      system
-      thread
-  )
+find_package(
+  Boost
+  1.75.0
+  QUIET
+  OPTIONAL_COMPONENTS
+    container
+    filesystem
+    iostreams
+    json
+    stacktrace_basic
+    system
+    thread
+)
 find_package(ZLIB QUIET)
 find_package(unofficial-zeromq QUIET)
 find_package(
@@ -93,16 +93,26 @@ find_package(unofficial-sodium QUIET)
 find_package(Protobuf QUIET)
 find_package(lmdb QUIET)
 find_package(
+  QT
+  NAMES
+  Qt6
   Qt5
   COMPONENTS
     Core
     Gui
     Qml
-    Widgets
+  QUIET
+)
+find_package(
+  Qt${QT_VERSION_MAJOR}
+  COMPONENTS
+    Core
+    Gui
+    Qml
   QUIET
 )
 find_package(SQLite3 QUIET)
-find_package(opendht QUIET)
+find_package(TBB QUIET)
 
 # -----------------------------------------------------------------------------
 # Source Definitions

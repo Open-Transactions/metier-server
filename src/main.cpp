@@ -65,10 +65,21 @@ auto main(int argc, char* argv[]) -> int
         return 0;
     }
 
-    if (opts.start_sync_server_ && opts.sync_server_public_ip_.empty()) {
-        std::cout << "Mandatory argument --public_addr not specified\n";
+    if (opts.start_sync_server_) {
+        if (opts.sync_server_public_ip_.empty()) {
+            std::cout << "Mandatory argument --public_addr not specified\n";
 
-        return 1;
+            return 1;
+        }
+
+        using enum opentxs::network::blockchain::Transport;
+        // TODO parse the address to see if it is ipv4 or ipv6
+        opts.ot_.AddOTDHTListener(
+            ipv4,
+            opts.sync_server_public_ip_,
+            ipv4,
+            "0.0.0.0"
+        );
     }
 
     ot::api::Context::PrepareSignalHandling();

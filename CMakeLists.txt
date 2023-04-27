@@ -74,6 +74,7 @@ find_package(
   QUIET
   OPTIONAL_COMPONENTS
     container
+    exception
     filesystem
     iostreams
     json

@@ -6,12 +6,13 @@
 set(cxx-sources main.cpp)
 
 add_executable(${PROJECT_NAME} ${cxx-sources})
+otcommon_configure_cxx_target(${PROJECT_NAME})
+otcommon_define_signed_overflow(${PROJECT_NAME})
 
 target_link_libraries(
   ${PROJECT_NAME}
-  PRIVATE
-    Threads::Threads
-    opentxs
+  PUBLIC
+    opentxs::libopentxs
     Boost::program_options
 )
 

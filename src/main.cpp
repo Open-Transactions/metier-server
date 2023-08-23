@@ -115,7 +115,7 @@ auto main(int argc, char* argv[]) -> int
             static const auto widthChain = [] {
                 auto out = std::size_t{0};
 
-                for (const auto chain : ot::blockchain::DefinedChains()) {
+                for (const auto chain : ot::blockchain::defined_chains()) {
                     out = std::max(out, ot::blockchain::print(chain).size());
                 }
 
@@ -201,8 +201,8 @@ auto options() noexcept -> const po::options_description&
             "Enable all supported blockchains. Seed nodes may still be set by "
             "passing the option for the appropriate chain.");
 
-        for (const auto& chain : ot::blockchain::SupportedChains()) {
-            auto ticker = ot::blockchain::TickerSymbol(chain);
+        for (const auto& chain : ot::blockchain::supported_chains()) {
+            auto ticker = ot::blockchain::ticker_symbol(chain);
             auto message = std::stringstream{};
             message << "Enable " << ot::blockchain::print(chain)
                     << " blockchain.\nOptionally specify ip address of seed "
@@ -238,8 +238,8 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 {
     auto map = ot::Map<ot::UnallocatedCString, Type>{};
 
-    for (const auto& chain : ot::blockchain::SupportedChains()) {
-        auto ticker = ot::blockchain::TickerSymbol(chain);
+    for (const auto& chain : ot::blockchain::supported_chains()) {
+        auto ticker = ot::blockchain::ticker_symbol(chain);
         lower(ticker);
         map.emplace(std::move(ticker), chain);
     }
@@ -258,7 +258,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
         if (name == help_) {
             opts.show_help_ = true;
         } else if (name == all_) {
-            for (const auto chain : ot::blockchain::SupportedChains()) {
+            for (const auto chain : ot::blockchain::supported_chains()) {
                 if (0u == disabled.count(chain)) {
                     opts.enabled_chains_[chain];
                 }

@@ -6,6 +6,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
 #include <boost/program_options.hpp>
+
 #pragma GCC diagnostic pop
 #include <opentxs/opentxs.hpp>
 #include <algorithm>
@@ -75,11 +76,7 @@ auto main(int argc, char* argv[]) -> int
         using enum opentxs::network::blockchain::Transport;
         // TODO parse the address to see if it is ipv4 or ipv6
         opts.ot_.AddOTDHTListener(
-            ipv4,
-            opts.sync_server_public_ip_,
-            ipv4,
-            "0.0.0.0"
-        );
+            ipv4, opts.sync_server_public_ip_, ipv4, "0.0.0.0");
     }
 
     ot::api::Context::PrepareSignalHandling();

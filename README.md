@@ -1,44 +1,48 @@
-metier-server
-==============
+# Métier-server
 
-### Build Instructions
+Métier-server is a non-validating blockchain full node based on [libopentxs](https://github.com/Open-Transactions/opentxs) which operates on multiple networks simultaneously.
 
-metier-server uses the CMake build system. The basic steps are:
+It provides additional features on top of the baseline P2P protocol of the respective reference implementations of the supported blockchains which support libopentxs-based wallet applications.
+
+## Build Instructions
+
+The recommended way of deploying Métier-server is via the [Dockerfile](tools/docker).
+
+Métier-server may also be built standalone using the CMake build system. The basic steps are:
 
     mkdir build
     cd build
     cmake ..
-    make
-    make install
+    cmake --build .
+    cmake --install .
 
-This assumes you have [opentxs](https://github.com/Open-Transactions/opentxs)
-installed and available on the system.
+## Usage
 
+The ```--public_addr``` argument should be the ip address via which Métier-server will be reachable by its intended users. Other than for testing this usually should be a globally routable address.
 
-### Usage
+If Métier-server crashes due to an inability to create sockets then the ```nofile``` ulimit is set too low.
+
+Métier-server will listen on three tcp ports:
+
+    * Two sequential ports beginning at the one specified with the --sync_server argument
+    * Port 8816
+
+The most current list of supported chains and their associated command line arguments, as well as the full list of libopentxs arguments, can be obtained by passing --help.
+
 
 ```
-Options:
+Metier-server options:
   --help                                Display this message
-  --data_dir arg (=$HOME/.metier-server/)
+  --data_dir arg (=/home/user/.metier-server/)
                                         Path to data directory
-  --block_storage arg                   Block persistence level.
-                                            0: do not save any blocks
-                                            1: save blocks downloaded by the
-                                        wallet
-                                            2: download and save all blocks
   --sync_server arg                     Starting TCP port to use for sync
                                         server. Two ports will be allocated.
-                                        Implies --block_storage=2
   --public_addr arg                     IP address or domain name where clients
                                         can connect to reach the sync server.
                                         Mandatory if --sync_server is
                                         specified.
-  --log_level arg                       Log verbosity. Valid values are -1
-                                        through 5. Higher numbers are more
-                                        verbose. Default value is 0
   --all                                 Enable all supported blockchains. Seed
-                                        nodes still be set by passing the
+                                        nodes may still be set by passing the
                                         option for the appropriate chain.
   --btc arg                             Enable Bitcoin blockchain.
                                         Optionally specify ip address of seed
@@ -62,12 +66,27 @@ Options:
   --pkt arg                             Enable PKT blockchain.
                                         Optionally specify ip address of seed
                                         node or "off" to disable
+  --bsv arg                             Enable Bitcoin SV blockchain.
+                                        Optionally specify ip address of seed
+                                        node or "off" to disable
+  --tnbsv arg                           Enable Bitcoin SV (testnet3)
+                                        blockchain.
+                                        Optionally specify ip address of seed
+                                        node or "off" to disable
+  --xec arg                             Enable eCash blockchain.
+                                        Optionally specify ip address of seed
+                                        node or "off" to disable
+  --tnxec arg                           Enable eCash (testnet3) blockchain.
+                                        Optionally specify ip address of seed
+                                        node or "off" to disable
+  --tn4bch arg                          Enable Bitcoin Cash (testnet4)
+                                        blockchain.
+                                        Optionally specify ip address of seed
+                                        node or "off" to disable
+  --dash arg                            Enable Dash blockchain.
+                                        Optionally specify ip address of seed
+                                        node or "off" to disable
+  --tndash arg                          Enable Dash (testnet3) blockchain.
+                                        Optionally specify ip address of seed
+                                        node or "off" to disable
 ```
-
-### Dependencies
-
-[Open Transactions library](https://github.com/Open-Transactions/opentxs)
-
-### Docker
-
-A docker image is available in the [opentxs-docker](https://github.com/Open-Transactions/docker/tree/master/metier-server) repository.

@@ -22,7 +22,7 @@ Persistent storage must be mounted at /var/lib/metier inside the image and the `
 ```
 docker run \
     --read-only \
-    --mount type=bind,src=/var/lib/metier,dst=/metier \
+    --mount type=bind,src=/var/lib/metier,dst=/var/lib/metier \
     --user 1000:1000 \
     --ulimit nofile=262144:262144 \
     -p 8814:8814/tcp \
@@ -37,7 +37,7 @@ docker run \
 ```
 docker run \
     --read-only \
-    --mount type=bind,src=/var/lib/metier,dst=/metier \
+    --mount type=bind,src=/var/lib/metier,dst=/var/lib/metier \
     --user 1000:1000 \
     --ulimit nofile=262144:262144 \
     -p 8814:8814/tcp \

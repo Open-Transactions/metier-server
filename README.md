@@ -6,7 +6,7 @@ It provides additional features on top of the baseline P2P protocol of the respe
 
 ## Build Instructions
 
-The recommended way of deploying Métier-server is via the [Dockerfile](tools/docker).
+The recommended way of deploying Métier-server is via [Docker](tools/docker).
 
 Métier-server may also be built standalone using the CMake build system. The basic steps are:
 

@@ -15,21 +15,6 @@ RUN mkdir -p /usr/src && git clone --recursive "${METIER_SERVER_REPO}" /usr/src/
 
 ARG OPENTXS_BUILD_URL
 FROM $OPENTXS_BUILD_URL AS compile
-RUN --mount=type=tmpfs,target=/var/cache/dnf dnf install -y \
-    boost-devel \
-    boost-devel \
-    cmake \
-    gcc-c++ \
-    libsodium-devel \
-    lmdb-devel \
-    ninja-build \
-    openssl-devel \
-    protobuf-compiler \
-    protobuf-lite-devel \
-    tbb-devel \
-    zeromq-devel \
-    zlib-devel
-
 COPY --from=download /usr/src/metier-server /usr/src/metier-server
 RUN mkdir -p /tmp/metier-server && cd /tmp/metier-server \
     && cmake \

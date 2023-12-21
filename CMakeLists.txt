@@ -21,7 +21,7 @@ project(metier-server)
 
 find_package(
   otcommon
-  1
+  2
   CONFIG
   REQUIRED
 )

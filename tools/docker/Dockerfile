@@ -1,23 +1,32 @@
+ARG BASE_FEDORA_VERSION="39"
 ARG METIER_SERVER_REPO="https://github.com/Open-Transactions/metier-server"
 ARG OPENTXS_VERSION="latest"
 ARG OPENTXS_BUILD_URL="opentransactions/fedora-devel:$OPENTXS_VERSION"
 ARG OPENTXS_RUN_URL="opentransactions/fedora:$OPENTXS_VERSION"
 
-FROM fedora:39 AS base
+FROM alpine AS download
+RUN mkdir -p /usr/src
+RUN --mount=type=tmpfs,target=/var/cache/apk apk add \
+    bzip2 \
+    git \
+    lzo \
+    p7zip \
+    rsync \
+    wget \
+    xz
 
-FROM base AS git
-RUN --mount=type=tmpfs,target=/var/cache/dnf dnf install -y git
+FROM fedora:${BASE_FEDORA_VERSION} AS base
 
-FROM git AS download
+FROM download AS metier_server-download
 ARG METIER_SERVER_REPO
 ARG METIER_SERVER_COMMIT
 RUN mkdir -p /usr/src && git clone --recursive "${METIER_SERVER_REPO}" /usr/src/metier-server && cd /usr/src/metier-server && git reset --hard "${METIER_SERVER_COMMIT}"
 
 ARG OPENTXS_BUILD_URL
 FROM $OPENTXS_BUILD_URL AS compile
-COPY --from=download /usr/src/metier-server /usr/src/metier-server
+COPY --from=metier_server-download /usr/src/metier-server /usr/src/metier-server
 RUN mkdir -p /tmp/metier-server && cd /tmp/metier-server \
-    && cmake \
+    && /usr/bin/cmake \
         -GNinja \
         -DCMAKE_C_FLAGS="-O2" \
         -DCMAKE_CXX_FLAGS="-O2" \

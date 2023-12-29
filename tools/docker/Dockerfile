@@ -22,7 +22,7 @@ RUN mkdir -p /usr/src && git clone --recursive "${METIER_SERVER_REPO}" /usr/src/
 
 FROM $OPENTXS_BUILD_URL AS compile
 COPY --from=metier_server-download /usr/src/metier-server /usr/src/metier-server
-RUN --mount=type=tmpfs,target=/tmp/metier-server /usr/bin/cmake \
+RUN --mount=type=tmpfs,target=/tmp/metier-server /opt/cmake/bin/cmake \
         -S /usr/src/metier-server \
         -B /tmp/metier-server \
         -GNinja \
@@ -31,8 +31,8 @@ RUN --mount=type=tmpfs,target=/tmp/metier-server /usr/bin/cmake \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_UNITY_BUILD=ON \
         -DCMAKE_UNITY_BUILD_BATCH_SIZE=0 \
-    && /usr/bin/cmake --build /tmp/metier-server \
-    && /usr/bin/cmake --install /tmp/metier-server
+    && /opt/cmake/bin/cmake --build /tmp/metier-server \
+    && /opt/cmake/bin/cmake --install /tmp/metier-server
 
 FROM $OPENTXS_RUN_URL AS run
 COPY --from=compile /usr/local/bin/metier-server /usr/bin/metier-server

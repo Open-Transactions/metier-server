@@ -15,14 +15,14 @@ To use a specific version of libopentxs add ```--build-arg "OPENTXS_VERSION=<des
 
 ### Running the image
 
-Persistent storage must be mounted at /var/lib/metier inside the image and the ```--user``` argument to ```docker run``` should be set to match the ownership of this directory.
+Persistent storage must be mounted at /srv/metier-server inside the image and the ```--user``` argument to ```docker run``` should be set to match the ownership of this directory.
 
 #### Examples
 
 ```
 docker run \
     --read-only \
-    --mount type=bind,src=/var/lib/metier,dst=/var/lib/metier \
+    --mount type=bind,src=/srv/metier-server,dst=/srv/metier-server \
     --user 1000:1000 \
     --ulimit nofile=262144:262144 \
     -p 8814:8814/tcp \
@@ -37,7 +37,7 @@ docker run \
 ```
 docker run \
     --read-only \
-    --mount type=bind,src=/var/lib/metier,dst=/var/lib/metier \
+    --mount type=bind,src=/srv/metier-server,dst=/srv/metier-server \
     --user 1000:1000 \
     --ulimit nofile=262144:262144 \
     -p 8814:8814/tcp \

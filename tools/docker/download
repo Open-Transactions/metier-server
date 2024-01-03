@@ -1,0 +1,8 @@
+FROM download AS metier-server-download
+ARG METIER_SERVER_REPO
+ARG METIER_SERVER_TAG
+
+RUN --mount=type=tmpfs,target=/tmp/download/ cd /tmp/download \
+    && wget -O /tmp/download/metier-server.tar.gz "${METIER_SERVER_REPO}/archive/refs/tags/${METIER_SERVER_TAG}.tar.gz" \
+    && tar -xf metier-server.tar.gz \
+    && mv "metier-server-${METIER_SERVER_TAG}" /usr/src/metier-server

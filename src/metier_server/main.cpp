@@ -18,9 +18,12 @@
 #include <string>
 #include <vector>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wheader-hygiene"
 namespace ot = opentxs;
 namespace po = boost::program_options;
 using namespace std::literals;
+#pragma GCC diagnostic pop
 
 using Type = ot::blockchain::Type;
 using Enabled = ot::Map<Type, ot::UnallocatedCString>;

@@ -65,7 +65,7 @@ target "default" {
     OPENTXS_VERSION = "${opentxs}"
   }
   tags = [
-    "opentransactions/notary:${tag}-${opentxs}-${target_arch}",
-    "opentransactions/notary:latest-${target_arch}"
+    "opentransactions/metier-server:${tag}-${opentxs}-${target_arch}",
+    "opentransactions/metier-server:latest-${target_arch}"
   ]
 }

@@ -4,5 +4,5 @@ ARG RUNTIME="${OPENTXS_RUNTIME}:${OPENTXS_VERSION}"
 
 FROM ${RUNTIME} AS run
 COPY --from=compile /opt/metier-server /usr
-ENTRYPOINT [ "/usr/bin/metier-server", "--ot_home=/srv/metier-server" ]
+ENTRYPOINT [ "/usr/bin/metier-server", "--data_dir=/srv/metier-server" ]
 CMD []

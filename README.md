@@ -1,5 +1,9 @@
 # Métier-server
 
+[![format](https://github.com/open-transactions/metier-server/workflows/format/badge.svg)](https://github.com/Open-Transactions/metier-server/actions)
+[![iwyu](https://github.com/open-transactions/metier-server/workflows/iwyu/badge.svg)](https://github.com/Open-Transactions/metier-server/actions)
+[![compile](https://github.com/open-transactions/metier-server/workflows/compile/badge.svg)](https://github.com/Open-Transactions/metier-server/actions)
+
 Métier-server is a non-validating blockchain full node based on [libopentxs](https://github.com/Open-Transactions/opentxs) which operates on multiple networks simultaneously.
 
 It provides additional features on top of the baseline P2P protocol of the respective reference implementations of the supported blockchains which support libopentxs-based wallet applications.

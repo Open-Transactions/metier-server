@@ -1,0 +1,18 @@
+ARG OPENTXS_SDK
+ARG OPENTXS_VERSION
+ARG SDK="${OPENTXS_SDK}:${OPENTXS_VERSION}"
+
+FROM ${SDK} AS compile
+COPY --from=metier-server-download /usr/src/metier-server /usr/src/metier-server
+RUN --mount=type=tmpfs,target=/tmp/metier-server /opt/cmake/bin/cmake \
+        -S /usr/src/metier-server \
+        -B /tmp/metier-server \
+        -GNinja \
+        -DCMAKE_INSTALL_PREFIX=/opt/metier-server \
+        -DCMAKE_C_FLAGS="-O2" \
+        -DCMAKE_CXX_FLAGS="-O2" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_UNITY_BUILD=ON \
+        -DCMAKE_UNITY_BUILD_BATCH_SIZE=0 \
+    && /opt/cmake/bin/cmake --build /tmp/metier-server \
+    && /opt/cmake/bin/cmake --install /tmp/metier-server

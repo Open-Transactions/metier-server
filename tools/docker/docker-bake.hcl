@@ -27,6 +27,7 @@ target "downloader" {
 target "metier-server-download" {
   dockerfile = "download"
   target = "metier-server-download"
+  ssh = [ "default" ]
   contexts = {
     download = "target:downloader"
   }

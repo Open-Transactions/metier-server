@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <ranges>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -86,10 +87,24 @@ auto main(int argc, char* argv[]) -> int
     const auto& ot = ot::InitContext(opts.ot_);
     ot.HandleSignals();
     const auto& client = ot.StartClientSession(opts.ot_, 0);
+    const auto enabled = [&] {
+        auto out = ot::Map<std::string_view, ot::blockchain::Type>{};
 
-    for (const auto& [chain, seed] : opts.enabled_chains_) {
-        client.Network().Blockchain().Enable(chain, seed);
-    }
+        for (const auto& [chain, seed] : opts.enabled_chains_) {
+            client.Network().Blockchain().Enable(chain, seed);
+            out.try_emplace(ot::blockchain::print(chain), chain);
+        }
+
+        return out;
+    }();
+    const auto sorted = [&] {
+        auto out = ot::Vector<ot::blockchain::Type>{};
+        out.reserve(enabled.size());
+        std::ranges::copy(
+            enabled | std::views::values, std::back_inserter(out));
+
+        return out;
+    }();
 
     if (opts.start_sync_server_) {
         constexpr auto prefix = "tcp://";
@@ -110,7 +125,7 @@ auto main(int argc, char* argv[]) -> int
 
     client.Schedule(
         6s,
-        [chains = opts.enabled_chains_,
+        [chains = sorted,
          stats = client.Network().Blockchain().Stats()]() -> void {
             static const auto widthChain = [] {
                 auto out = std::size_t{0};
@@ -144,7 +159,7 @@ auto main(int argc, char* argv[]) -> int
                 out << '\n';
             }
 
-            for (const auto& [chain, _] : chains) {
+            for (const auto& chain : chains) {
                 out << std::setw(widthChain) << print(chain);
                 out << std::setw(width)
                     << std::to_string(stats.PeerCount(chain));

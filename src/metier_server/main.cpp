@@ -45,11 +45,11 @@ struct Options {
     ot::UnallocatedCString sync_server_public_ip_{};
 };
 
-auto options() noexcept -> const po::options_description&;
+auto options() noexcept -> po::options_description const&;
 auto lower(ot::UnallocatedCString& str) noexcept -> ot::UnallocatedCString&;
 auto parse(
-    const ot::UnallocatedCString& input,
-    const Type type,
+    ot::UnallocatedCString const& input,
+    Type const type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void;
 auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void;
@@ -84,20 +84,23 @@ auto main(int argc, char* argv[]) -> int
     }
 
     ot::api::Context::PrepareSignalHandling();
-    const auto& ot = ot::InitContext(opts.ot_);
+    auto const& ot = ot::InitContext(opts.ot_);
     ot.HandleSignals();
-    const auto& client = ot.StartClientSession(opts.ot_, 0);
-    const auto enabled = [&] {
-        auto out = ot::Map<std::string_view, ot::blockchain::Type>{};
+    auto const& client = ot.StartClientSession(opts.ot_, 0);
+    auto const enabled = [&] {
+        auto out = ot::Map<
+            std::string_view,
+            ot::blockchain::Type,
+            opentxs::NaturalCaseCompare>{};
 
-        for (const auto& [chain, seed] : opts.enabled_chains_) {
+        for (auto const& [chain, seed] : opts.enabled_chains_) {
             client.Network().Blockchain().Enable(chain, seed);
             out.try_emplace(ot::blockchain::print(chain), chain);
         }
 
         return out;
     }();
-    const auto sorted = [&] {
+    auto const sorted = [&] {
         auto out = ot::Vector<ot::blockchain::Type>{};
         out.reserve(enabled.size());
         std::ranges::copy(
@@ -110,8 +113,8 @@ auto main(int argc, char* argv[]) -> int
         constexpr auto prefix = "tcp://";
         constexpr auto internal = "0.0.0.0";
         constexpr auto sep = ":";
-        const auto& port = opts.sync_port_;
-        const auto nextport{port + 1};
+        auto const& port = opts.sync_port_;
+        auto const nextport{port + 1};
         client.Network().OTDHT().StartListener(
             ot::UnallocatedCString{prefix} + internal + sep +
                 std::to_string(port),
@@ -127,10 +130,10 @@ auto main(int argc, char* argv[]) -> int
         6s,
         [chains = sorted,
          stats = client.Network().Blockchain().Stats()]() -> void {
-            static const auto widthChain = [] {
+            static auto const widthChain = [] {
                 auto out = std::size_t{0};
 
-                for (const auto chain : ot::blockchain::defined_chains()) {
+                for (auto const chain : ot::blockchain::defined_chains()) {
                     out = std::max(out, ot::blockchain::print(chain).size());
                 }
 
@@ -159,7 +162,7 @@ auto main(int argc, char* argv[]) -> int
                 out << '\n';
             }
 
-            for (const auto& chain : chains) {
+            for (auto const& chain : chains) {
                 out << std::setw(widthChain) << print(chain);
                 out << std::setw(width)
                     << std::to_string(stats.PeerCount(chain));
@@ -191,9 +194,9 @@ auto lower(ot::UnallocatedCString& s) noexcept -> ot::UnallocatedCString&
     return s;
 }
 
-auto options() noexcept -> const po::options_description&
+auto options() noexcept -> po::options_description const&
 {
-    static const auto output = [] {
+    static auto const output = [] {
         auto out = po::options_description{"Metier-server options"};
         out.add_options()(help_, "Display this message");
         out.add_options()(
@@ -216,7 +219,7 @@ auto options() noexcept -> const po::options_description&
             "Enable all supported blockchains. Seed nodes may still be set by "
             "passing the option for the appropriate chain.");
 
-        for (const auto& chain : ot::blockchain::supported_chains()) {
+        for (auto const& chain : ot::blockchain::supported_chains()) {
             auto ticker = ot::blockchain::ticker_symbol(chain);
             auto message = std::stringstream{};
             message << "Enable " << ot::blockchain::print(chain)
@@ -234,8 +237,8 @@ auto options() noexcept -> const po::options_description&
 }
 
 auto parse(
-    const ot::UnallocatedCString& input,
-    const Type type,
+    ot::UnallocatedCString const& input,
+    Type const type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void
 {
@@ -251,9 +254,28 @@ auto parse(
 
 auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 {
+    static auto const librarySupported = ot::blockchain::supported_chains();
+    static auto const excludeFromAll = [&] {
+        using enum opentxs::blockchain::Type;
+
+        return std::set<opentxs::blockchain::Type>{
+            BitcoinSV, BitcoinSV_testnet3};
+    }();
+    static auto const allChains = [&] {
+        auto out = std::vector<opentxs::blockchain::Type>();
+        out.reserve(librarySupported.size());
+        std::set_difference(
+            librarySupported.begin(),
+            librarySupported.end(),
+            excludeFromAll.begin(),
+            excludeFromAll.end(),
+            std::back_inserter(out));
+
+        return out;
+    }();
     auto map = ot::Map<ot::UnallocatedCString, Type>{};
 
-    for (const auto& chain : ot::blockchain::supported_chains()) {
+    for (auto const& chain : ot::blockchain::supported_chains()) {
         auto ticker = ot::blockchain::ticker_symbol(chain);
         lower(ticker);
         map.emplace(std::move(ticker), chain);
@@ -269,11 +291,11 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
     auto& publicIP = opts.sync_server_public_ip_;
     auto disabled = ot::Set<Type>{};
 
-    for (const auto& [name, value] : variables()) {
+    for (auto const& [name, value] : variables()) {
         if (name == help_) {
             opts.show_help_ = true;
         } else if (name == all_) {
-            for (const auto chain : ot::blockchain::supported_chains()) {
+            for (auto const chain : allChains) {
                 if (0u == disabled.count(chain)) {
                     opts.enabled_chains_[chain];
                 }
@@ -297,7 +319,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
         } else {
             try {
                 auto input{name};
-                const auto chain = map.at(lower(input));
+                auto const chain = map.at(lower(input));
                 parse(
                     value.as<ot::UnallocatedCString>(),
                     chain,
@@ -309,7 +331,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
         }
     }
 
-    for (const auto chain : disabled) { otargs.DisableBlockchain(chain); }
+    for (auto const chain : disabled) { otargs.DisableBlockchain(chain); }
 
     opts.start_sync_server_ =
         (0 < syncPort) &&
@@ -320,7 +342,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 auto read_options(int argc, char** argv) noexcept -> bool
 {
     try {
-        const auto parsed = po::command_line_parser(argc, argv)
+        auto const parsed = po::command_line_parser(argc, argv)
                                 .options(options())
                                 .allow_unregistered()
                                 .run();

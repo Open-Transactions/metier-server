@@ -254,6 +254,25 @@ auto parse(
 
 auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 {
+    static auto const librarySupported = ot::blockchain::supported_chains();
+    static auto const excludeFromAll = [&] {
+        using enum opentxs::blockchain::Type;
+
+        return std::set<opentxs::blockchain::Type>{
+            BitcoinSV, BitcoinSV_testnet3};
+    }();
+    static auto const allChains = [&] {
+        auto out = std::vector<opentxs::blockchain::Type>();
+        out.reserve(librarySupported.size());
+        std::set_difference(
+            librarySupported.begin(),
+            librarySupported.end(),
+            excludeFromAll.begin(),
+            excludeFromAll.end(),
+            std::back_inserter(out));
+
+        return out;
+    }();
     auto map = ot::Map<ot::UnallocatedCString, Type>{};
 
     for (auto const& chain : ot::blockchain::supported_chains()) {
@@ -276,7 +295,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
         if (name == help_) {
             opts.show_help_ = true;
         } else if (name == all_) {
-            for (auto const chain : ot::blockchain::supported_chains()) {
+            for (auto const chain : allChains) {
                 if (0u == disabled.count(chain)) {
                     opts.enabled_chains_[chain];
                 }

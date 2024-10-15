@@ -3,6 +3,9 @@ ARG OPENTXS_VERSION
 ARG RUNTIME="${OPENTXS_RUNTIME}:${OPENTXS_VERSION}"
 
 FROM ${RUNTIME} AS run
+COPY metier-server.conf /etc/metier-server/metier-server.conf
+COPY metier-server.sh /usr/bin/metier-server.sh
 COPY --from=compile /opt/metier-server /usr
-ENTRYPOINT [ "/usr/bin/metier-server", "--data_dir=/srv/metier-server" ]
+RUN chmod +x /usr/bin/metier-server.sh
+ENTRYPOINT [ "/usr/bin/metier-server.sh" ]
 CMD []

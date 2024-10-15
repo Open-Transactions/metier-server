@@ -15,36 +15,34 @@ To use a specific version of libopentxs add ```--build-arg "OPENTXS_VERSION=<des
 
 ### Running the image
 
-Persistent storage must be mounted at /srv/metier-server inside the image and the ```--user``` argument to ```docker run``` should be set to match the ownership of this directory.
+#### Configuration
 
-#### Examples
+A configuration directory should be mounted inside the image at /etc/metier
+
+This directory should contain metier-server.conf and optionally otdht.json
+
+The specified user should be able to read /etc/metier-server/metier-server.conf
+
+/etc/metier-server/otdht.json will be created after the first run of the image
+
+#### Storage
+
+Storage should be mounted inside the image at /srv/metier-server and must be owned by the specified user
+
+Optionally bulk storage may be mounted inside the image at /srv/metier-server/client_data/blockchain/common/blocks
+
+#### Example
 
 ```
 docker run \
     --read-only \
-    --mount type=bind,src=/srv/metier-server,dst=/srv/metier-server \
+    --mount type=bind,src=/mnt/configuration,dst=/etc/metier \
+    --mount type=bind,src=/mnt/ssd-storage,dst=/srv/metier-server \
+    --mount type=bind,src=/mnt/hdd-storage,dst=/srv/metier-server/client_data/blockchain/common/blocks \
     --user 1000:1000 \
     --ulimit nofile=262144:262144 \
     -p 8814:8814/tcp \
     -p 8815:8815/tcp \
     -p 8816:8816/tcp \
-    opentransactions/metier-server:latest \
-    --sync_server=8814 \
-    --public_addr=127.0.0.1 \
-    --all --bsv=off --tnbsv=off --tndash=off
-```
-
-```
-docker run \
-    --read-only \
-    --mount type=bind,src=/srv/metier-server,dst=/srv/metier-server \
-    --user 1000:1000 \
-    --ulimit nofile=262144:262144 \
-    -p 8814:8814/tcp \
-    -p 8815:8815/tcp \
-    -p 8816:8816/tcp \
-    opentransactions/metier-server:latest \
-    --sync_server=8814 \
-    --public_addr=127.0.0.1 \
-    --btc=<seed node>
+    opentransactions/metier-server:latest
 ```

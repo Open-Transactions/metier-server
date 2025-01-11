@@ -2,13 +2,13 @@
 
 METIER_ROOT="/srv/metier-server"
 
-mkdir -p "${METIER_ROOT}/client_data/blockchain/common/blocks"
-touch "${METIER_ROOT}/client_data/blockchain/version.3"
+mkdir -p "${METIER_ROOT}/client_data-0/blockchain/common/blocks"
+touch "${METIER_ROOT}/client_data-0/blockchain/version.3"
 
 if [ -e "/etc/metier-server/otdht.json" ] ; then
-    if [ ! -e "${METIER_ROOT}/client_data/otdht.json" ] ; then
+    if [ ! -e "${METIER_ROOT}/client_data-0/otdht.json" ] ; then
         echo "Using existing otdht.json from configuration directory:"
-        cp -v "/etc/metier-server/otdht.json" "${METIER_ROOT}/client_data/otdht.json"
+        cp -v "/etc/metier-server/otdht.json" "${METIER_ROOT}/client_data-0/otdht.json"
     fi
 fi
 
@@ -33,5 +33,5 @@ fi
 
 if [ ! -e "/etc/metier-server/otdht.json" ] ; then
     echo "Performing one-time backup of otdht.json:"
-    cp -v "${METIER_ROOT}/client_data/otdht.json" "/etc/metier-server/otdht.json"
+    cp -v "${METIER_ROOT}/client_data-0/otdht.json" "/etc/metier-server/otdht.json"
 fi

@@ -21,14 +21,12 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wheader-hygiene"
-namespace ot = opentxs;
-namespace po = boost::program_options;
 using namespace std::literals;
 #pragma GCC diagnostic pop
 
-using Type = ot::blockchain::Type;
-using Enabled = ot::Map<Type, ot::UnallocatedCString>;
-using Disabled = ot::Set<Type>;
+using Type = opentxs::blockchain::Type;
+using Enabled = opentxs::Map<Type, opentxs::UnallocatedCString>;
+using Disabled = opentxs::Set<Type>;
 
 constexpr auto all_{"all"};
 constexpr auto help_{"help"};
@@ -37,24 +35,25 @@ constexpr auto sync_public_ip_{"public_addr"};
 constexpr auto sync_server_{"sync_server"};
 
 struct Options {
-    ot::Options ot_{};
+    opentxs::Options ot_{};
     Enabled enabled_chains_{};
     bool show_help_{};
     int sync_port_{};
     bool start_sync_server_{};
-    ot::UnallocatedCString sync_server_public_ip_{};
+    opentxs::UnallocatedCString sync_server_public_ip_{};
 };
 
-auto options() noexcept -> po::options_description const&;
-auto lower(ot::UnallocatedCString& str) noexcept -> ot::UnallocatedCString&;
+auto options() noexcept -> boost::program_options::options_description const&;
+auto lower(opentxs::UnallocatedCString& str) noexcept
+    -> opentxs::UnallocatedCString&;
 auto parse(
-    ot::UnallocatedCString const& input,
+    opentxs::UnallocatedCString const& input,
     Type const type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void;
 auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void;
 auto read_options(int argc, char** argv) noexcept -> bool;
-auto variables() noexcept -> po::variables_map&;
+auto variables() noexcept -> boost::program_options::variables_map&;
 
 auto main(int argc, char* argv[]) -> int
 {
@@ -83,25 +82,25 @@ auto main(int argc, char* argv[]) -> int
             ipv4, opts.sync_server_public_ip_, ipv4, "0.0.0.0");
     }
 
-    ot::api::Context::PrepareSignalHandling();
-    auto const& ot = ot::InitContext(opts.ot_);
+    opentxs::api::Context::PrepareSignalHandling();
+    auto const& ot = opentxs::InitContext(opts.ot_);
     ot.HandleSignals();
     auto const& client = ot.StartClientSession(opts.ot_, 0);
     auto const enabled = [&] {
-        auto out = ot::Map<
+        auto out = opentxs::Map<
             std::string_view,
-            ot::blockchain::Type,
+            opentxs::blockchain::Type,
             opentxs::NaturalCaseCompare>{};
 
         for (auto const& [chain, seed] : opts.enabled_chains_) {
             client.Network().Blockchain().Enable(chain, seed);
-            out.try_emplace(ot::blockchain::print(chain), chain);
+            out.try_emplace(opentxs::blockchain::print(chain), chain);
         }
 
         return out;
     }();
     auto const sorted = [&] {
-        auto out = ot::Vector<ot::blockchain::Type>{};
+        auto out = opentxs::Vector<opentxs::blockchain::Type>{};
         out.reserve(enabled.size());
         std::ranges::copy(
             enabled | std::views::values, std::back_inserter(out));
@@ -116,14 +115,14 @@ auto main(int argc, char* argv[]) -> int
         auto const& port = opts.sync_port_;
         auto const nextport{port + 1};
         client.Network().OTDHT().StartListener(
-            ot::UnallocatedCString{prefix} + internal + sep +
+            opentxs::UnallocatedCString{prefix} + internal + sep +
                 std::to_string(port),
-            ot::UnallocatedCString{prefix} + opts.sync_server_public_ip_ + sep +
-                std::to_string(port),
-            ot::UnallocatedCString{prefix} + internal + sep +
+            opentxs::UnallocatedCString{prefix} + opts.sync_server_public_ip_ +
+                sep + std::to_string(port),
+            opentxs::UnallocatedCString{prefix} + internal + sep +
                 std::to_string(nextport),
-            ot::UnallocatedCString{prefix} + opts.sync_server_public_ip_ + sep +
-                std::to_string(nextport));
+            opentxs::UnallocatedCString{prefix} + opts.sync_server_public_ip_ +
+                sep + std::to_string(nextport));
     }
 
     client.Schedule(
@@ -133,8 +132,9 @@ auto main(int argc, char* argv[]) -> int
             static auto const widthChain = [] {
                 auto out = std::size_t{0};
 
-                for (auto const chain : ot::blockchain::defined_chains()) {
-                    out = std::max(out, ot::blockchain::print(chain).size());
+                for (auto const chain : opentxs::blockchain::defined_chains()) {
+                    out =
+                        std::max(out, opentxs::blockchain::print(chain).size());
                 }
 
                 return static_cast<int>(out + 2);
@@ -180,12 +180,13 @@ auto main(int argc, char* argv[]) -> int
             std::cout << out.str() << std::endl;
         });
 
-    ot::Join();
+    opentxs::Join();
 
     return 0;
 }
 
-auto lower(ot::UnallocatedCString& s) noexcept -> ot::UnallocatedCString&
+auto lower(opentxs::UnallocatedCString& s) noexcept
+    -> opentxs::UnallocatedCString&
 {
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
         return std::tolower(c);
@@ -194,24 +195,26 @@ auto lower(ot::UnallocatedCString& s) noexcept -> ot::UnallocatedCString&
     return s;
 }
 
-auto options() noexcept -> po::options_description const&
+auto options() noexcept -> boost::program_options::options_description const&
 {
     static auto const output = [] {
-        auto out = po::options_description{"Metier-server options"};
+        auto out = boost::program_options::options_description{
+            "Metier-server options"};
         out.add_options()(help_, "Display this message");
         out.add_options()(
             home_,
-            po::value<ot::UnallocatedCString>()->default_value(
-                ot::api::Context::SuggestFolder("metier-server")),
+            boost::program_options::value<opentxs::UnallocatedCString>()
+                ->default_value(
+                    opentxs::api::Context::SuggestFolder("metier-server")),
             "Path to data directory");
         out.add_options()(
             sync_server_,
-            po::value<int>(),
+            boost::program_options::value<int>(),
             "Starting TCP port to use for sync server. Two ports will be "
             "allocated.");
         out.add_options()(
             sync_public_ip_,
-            po::value<ot::UnallocatedCString>(),
+            boost::program_options::value<opentxs::UnallocatedCString>(),
             "IP address or domain name where clients can connect to reach the "
             "sync server. Mandatory if --sync_server is specified.");
         out.add_options()(
@@ -219,15 +222,16 @@ auto options() noexcept -> po::options_description const&
             "Enable all supported blockchains. Seed nodes may still be set by "
             "passing the option for the appropriate chain.");
 
-        for (auto const& chain : ot::blockchain::supported_chains()) {
-            auto ticker = ot::blockchain::ticker_symbol(chain);
+        for (auto const& chain : opentxs::blockchain::supported_chains()) {
+            auto ticker = opentxs::blockchain::ticker_symbol(chain);
             auto message = std::stringstream{};
-            message << "Enable " << ot::blockchain::print(chain)
+            message << "Enable " << opentxs::blockchain::print(chain)
                     << " blockchain.\nOptionally specify ip address of seed "
                        "node or \"off\" to disable";
             out.add_options()(
                 lower(ticker).c_str(),
-                po::value<ot::UnallocatedCString>()->implicit_value(""),
+                boost::program_options::value<opentxs::UnallocatedCString>()
+                    ->implicit_value(""),
                 message.str().c_str());
         }
         return out;
@@ -237,7 +241,7 @@ auto options() noexcept -> po::options_description const&
 }
 
 auto parse(
-    ot::UnallocatedCString const& input,
+    opentxs::UnallocatedCString const& input,
     Type const type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void
@@ -254,7 +258,8 @@ auto parse(
 
 auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 {
-    static auto const librarySupported = ot::blockchain::supported_chains();
+    static auto const librarySupported =
+        opentxs::blockchain::supported_chains();
     static auto const excludeFromAll = [&] {
         using enum opentxs::blockchain::Type;
 
@@ -273,23 +278,24 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 
         return out;
     }();
-    auto map = ot::Map<ot::UnallocatedCString, Type>{};
+    auto map = opentxs::Map<opentxs::UnallocatedCString, Type>{};
 
-    for (auto const& chain : ot::blockchain::supported_chains()) {
-        auto ticker = ot::blockchain::ticker_symbol(chain);
+    for (auto const& chain : opentxs::blockchain::supported_chains()) {
+        auto ticker = opentxs::blockchain::ticker_symbol(chain);
         lower(ticker);
         map.emplace(std::move(ticker), chain);
     }
 
-    auto seed = ot::UnallocatedCString{};
+    auto seed = opentxs::UnallocatedCString{};
     auto& otargs = opts.ot_;
-    otargs.SetHome(ot::api::Context::SuggestFolder("metier-server").c_str());
-    otargs.SetBlockchainProfile(ot::BlockchainProfile::server);
+    otargs.SetHome(
+        opentxs::api::Context::SuggestFolder("metier-server").c_str());
+    otargs.SetBlockchainProfile(opentxs::blockchain::Profile::server);
     otargs.ParseCommandLine(argc, argv);
     auto& enabled = opts.enabled_chains_;
     auto& syncPort = opts.sync_port_;
     auto& publicIP = opts.sync_server_public_ip_;
-    auto disabled = ot::Set<Type>{};
+    auto disabled = opentxs::Set<Type>{};
 
     for (auto const& [name, value] : variables()) {
         if (name == help_) {
@@ -302,13 +308,14 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
             }
         } else if (name == home_) {
             try {
-                otargs.SetHome(value.as<ot::UnallocatedCString>().c_str());
+                otargs.SetHome(value.as<opentxs::UnallocatedCString>().c_str());
             } catch (...) {
             }
         } else if (name == sync_server_) {
             try {
                 syncPort = value.as<decltype(opts.sync_port_)>();
-                otargs.SetBlockchainProfile(ot::BlockchainProfile::server);
+                otargs.SetBlockchainProfile(
+                    opentxs::blockchain::Profile::server);
             } catch (...) {
             }
         } else if (name == sync_public_ip_) {
@@ -321,7 +328,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
                 auto input{name};
                 auto const chain = map.at(lower(input));
                 parse(
-                    value.as<ot::UnallocatedCString>(),
+                    value.as<opentxs::UnallocatedCString>(),
                     chain,
                     enabled,
                     disabled);
@@ -342,24 +349,25 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 auto read_options(int argc, char** argv) noexcept -> bool
 {
     try {
-        auto const parsed = po::command_line_parser(argc, argv)
-                                .options(options())
-                                .allow_unregistered()
-                                .run();
-        po::store(parsed, variables());
-        po::notify(variables());
+        auto const parsed =
+            boost::program_options::command_line_parser(argc, argv)
+                .options(options())
+                .allow_unregistered()
+                .run();
+        boost::program_options::store(parsed, variables());
+        boost::program_options::notify(variables());
 
         return true;
-    } catch (po::error& e) {
+    } catch (boost::program_options::error& e) {
         std::cerr << "ERROR: " << e.what() << "\n\n" << options() << std::endl;
 
         return false;
     }
 }
 
-auto variables() noexcept -> po::variables_map&
+auto variables() noexcept -> boost::program_options::variables_map&
 {
-    static auto output = po::variables_map{};
+    static auto output = boost::program_options::variables_map{};
 
     return output;
 }

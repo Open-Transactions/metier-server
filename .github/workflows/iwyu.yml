@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: true
     env:
-      docker: '1.224.1'
+      docker: '1.227.2'
     steps:
     - name: Checkout opentxs
       uses: actions/checkout@v3

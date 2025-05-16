@@ -144,32 +144,35 @@ auto main(int argc, char* argv[]) -> int
 
             {
                 out << std::setw(widthChain) << " ";
+                out << std::setw(width) << "overall ";
                 out << std::setw(width) << "peer ";
                 out << std::setw(width) << "block ";
                 out << std::setw(width) << "block";
+                out << std::setw(width) << "cfheader";
                 out << std::setw(width) << "cfilter";
                 out << '\n';
             }
 
             {
                 out << std::setw(widthChain) << " ";
+                out << std::setw(width) << "progress";
                 out << std::setw(width) << "count";
                 out << std::setw(width) << "headers";
                 out << std::setw(width) << "chain";
+                out << std::setw(width) << "chain ";
                 out << std::setw(width) << "chain ";
                 out << '\n';
             }
 
             for (auto const& chain : chains) {
                 out << std::setw(widthChain) << print(chain);
-                out << std::setw(width)
-                    << std::to_string(stats.PeerCount(chain));
-                out << std::setw(width)
-                    << std::to_string(stats.BlockHeaderTip(chain).height_);
-                out << std::setw(width)
-                    << std::to_string(stats.BlockTip(chain).height_);
-                out << std::setw(width)
-                    << std::to_string(stats.CfilterTip(chain).height_);
+                out << std::setw(width - 1) << std::fixed
+                    << std::setprecision(2) << stats.Progress(chain) << "%";
+                out << std::setw(width) << stats.PeerCount(chain);
+                out << std::setw(width) << stats.BlockHeaderTip(chain).height_;
+                out << std::setw(width) << stats.BlockTip(chain).height_;
+                out << std::setw(width) << stats.CfheaderTip(chain).height_;
+                out << std::setw(width) << stats.CfilterTip(chain).height_;
                 out << '\n';
             }
 

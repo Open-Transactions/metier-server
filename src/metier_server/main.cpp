@@ -148,7 +148,6 @@ auto main(int argc, char* argv[]) -> int
                 out << std::setw(width) << "block ";
                 out << std::setw(width) << "block";
                 out << std::setw(width) << "cfilter";
-                out << std::setw(width) << "sync ";
                 out << '\n';
             }
 
@@ -158,7 +157,6 @@ auto main(int argc, char* argv[]) -> int
                 out << std::setw(width) << "headers";
                 out << std::setw(width) << "chain";
                 out << std::setw(width) << "chain ";
-                out << std::setw(width) << "server";
                 out << '\n';
             }
 
@@ -172,8 +170,6 @@ auto main(int argc, char* argv[]) -> int
                     << std::to_string(stats.BlockTip(chain).height_);
                 out << std::setw(width)
                     << std::to_string(stats.CfilterTip(chain).height_);
-                out << std::setw(width)
-                    << std::to_string(stats.SyncTip(chain).height_);
                 out << '\n';
             }
 

@@ -70,7 +70,7 @@ otcommon_print_build_details(METIER_SERVER_PEDANTIC_BUILD "")
 otcommon_find_system_libraries()
 find_package(
   opentxs
-  1.228.0
+  1.229.0
   CONFIG
   REQUIRED
 )

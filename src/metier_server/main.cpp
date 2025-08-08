@@ -25,7 +25,7 @@ using namespace std::literals;
 #pragma GCC diagnostic pop
 
 using Type = opentxs::blockchain::Type;
-using Enabled = opentxs::Map<Type, opentxs::UnallocatedCString>;
+using Enabled = opentxs::Map<Type, opentxs::UnallocatedString>;
 using Disabled = opentxs::Set<Type>;
 
 constexpr auto all_{"all"};
@@ -40,14 +40,14 @@ struct Options {
     bool show_help_{};
     int sync_port_{};
     bool start_sync_server_{};
-    opentxs::UnallocatedCString sync_server_public_ip_{};
+    opentxs::UnallocatedString sync_server_public_ip_{};
 };
 
 auto options() noexcept -> boost::program_options::options_description const&;
-auto lower(opentxs::UnallocatedCString& str) noexcept
-    -> opentxs::UnallocatedCString&;
+auto lower(opentxs::UnallocatedString& str) noexcept
+    -> opentxs::UnallocatedString&;
 auto parse(
-    opentxs::UnallocatedCString const& input,
+    opentxs::UnallocatedString const& input,
     Type const type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void;
@@ -123,13 +123,13 @@ auto main(int argc, char* argv[]) -> int
             auto const& port = opts.sync_port_;
             auto const nextport{port + 1};
             auto const started = client.Network().OTDHT().StartListener(
-                opentxs::UnallocatedCString{prefix} + internal + sep +
+                opentxs::UnallocatedString{prefix} + internal + sep +
                     std::to_string(port),
-                opentxs::UnallocatedCString{prefix} +
+                opentxs::UnallocatedString{prefix} +
                     opts.sync_server_public_ip_ + sep + std::to_string(port),
-                opentxs::UnallocatedCString{prefix} + internal + sep +
+                opentxs::UnallocatedString{prefix} + internal + sep +
                     std::to_string(nextport),
-                opentxs::UnallocatedCString{prefix} +
+                opentxs::UnallocatedString{prefix} +
                     opts.sync_server_public_ip_ + sep +
                     std::to_string(nextport));
 
@@ -203,8 +203,8 @@ auto main(int argc, char* argv[]) -> int
     return 0;
 }
 
-auto lower(opentxs::UnallocatedCString& s) noexcept
-    -> opentxs::UnallocatedCString&
+auto lower(opentxs::UnallocatedString& s) noexcept
+    -> opentxs::UnallocatedString&
 {
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
         return std::tolower(c);
@@ -221,7 +221,7 @@ auto options() noexcept -> boost::program_options::options_description const&
         out.add_options()(help_, "Display this message");
         out.add_options()(
             home_,
-            boost::program_options::value<opentxs::UnallocatedCString>()
+            boost::program_options::value<opentxs::UnallocatedString>()
                 ->default_value(
                     opentxs::api::Context::SuggestFolder("metier-server")),
             "Path to data directory");
@@ -232,7 +232,7 @@ auto options() noexcept -> boost::program_options::options_description const&
             "allocated.");
         out.add_options()(
             sync_public_ip_,
-            boost::program_options::value<opentxs::UnallocatedCString>(),
+            boost::program_options::value<opentxs::UnallocatedString>(),
             "IP address or domain name where clients can connect to reach the "
             "sync server. Mandatory if --sync_server is specified.");
         out.add_options()(
@@ -248,7 +248,7 @@ auto options() noexcept -> boost::program_options::options_description const&
                        "node or \"off\" to disable";
             out.add_options()(
                 lower(ticker).c_str(),
-                boost::program_options::value<opentxs::UnallocatedCString>()
+                boost::program_options::value<opentxs::UnallocatedString>()
                     ->implicit_value(""),
                 message.str().c_str());
         }
@@ -259,7 +259,7 @@ auto options() noexcept -> boost::program_options::options_description const&
 }
 
 auto parse(
-    opentxs::UnallocatedCString const& input,
+    opentxs::UnallocatedString const& input,
     Type const type,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void
@@ -296,7 +296,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
 
         return out;
     }();
-    auto map = opentxs::Map<opentxs::UnallocatedCString, Type>{};
+    auto map = opentxs::Map<opentxs::UnallocatedString, Type>{};
 
     for (auto const& chain : opentxs::blockchain::supported_chains()) {
         auto ticker = opentxs::blockchain::ticker_symbol(chain);
@@ -304,7 +304,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
         map.emplace(std::move(ticker), chain);
     }
 
-    auto seed = opentxs::UnallocatedCString{};
+    auto seed = opentxs::UnallocatedString{};
     auto& otargs = opts.ot_;
     otargs.SetHome(
         opentxs::api::Context::SuggestFolder("metier-server").c_str());
@@ -326,7 +326,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
             }
         } else if (name == home_) {
             try {
-                otargs.SetHome(value.as<opentxs::UnallocatedCString>().c_str());
+                otargs.SetHome(value.as<opentxs::UnallocatedString>().c_str());
             } catch (...) {
             }
         } else if (name == sync_server_) {
@@ -346,7 +346,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
                 auto input{name};
                 auto const chain = map.at(lower(input));
                 parse(
-                    value.as<opentxs::UnallocatedCString>(),
+                    value.as<opentxs::UnallocatedString>(),
                     chain,
                     enabled,
                     disabled);

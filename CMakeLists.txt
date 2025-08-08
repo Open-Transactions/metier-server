@@ -55,7 +55,7 @@ option(
 
 otcommon_set_project_language_standard(
   99
-  20
+  23
   ${METIER_SERVER_PEDANTIC_BUILD}
 )
 
@@ -70,7 +70,7 @@ otcommon_print_build_details(METIER_SERVER_PEDANTIC_BUILD "")
 otcommon_find_system_libraries()
 find_package(
   opentxs
-  1.229.0
+  1.234.1
   CONFIG
   REQUIRED
 )

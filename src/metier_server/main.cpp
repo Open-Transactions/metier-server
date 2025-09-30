@@ -25,7 +25,7 @@ using namespace std::literals;
 #pragma GCC diagnostic pop
 
 using Type = opentxs::blockchain::Type;
-using Enabled = opentxs::Map<Type, opentxs::UnallocatedString>;
+using Enabled = opentxs::Set<Type>;
 using Disabled = opentxs::Set<Type>;
 
 constexpr auto all_{"all"};
@@ -49,6 +49,7 @@ auto lower(opentxs::UnallocatedString& str) noexcept
 auto parse(
     opentxs::UnallocatedString const& input,
     Type const type,
+    opentxs::api::Options& args,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void;
 auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void;
@@ -95,8 +96,8 @@ auto main(int argc, char* argv[]) -> int
                 opentxs::blockchain::Type,
                 opentxs::NaturalCaseCompare>{};
 
-            for (auto const& [chain, seed] : opts.enabled_chains_) {
-                if (client.Network().Blockchain().Enable(chain, seed)) {
+            for (auto const& chain : opts.enabled_chains_) {
+                if (client.Network().Blockchain().Enable(chain)) {
                     out.try_emplace(opentxs::blockchain::print(chain), chain);
                 } else {
 
@@ -261,6 +262,7 @@ auto options() noexcept -> boost::program_options::options_description const&
 auto parse(
     opentxs::UnallocatedString const& input,
     Type const type,
+    opentxs::api::Options& args,
     Enabled& enabled,
     Disabled& disabled) noexcept -> void
 {
@@ -270,7 +272,8 @@ auto parse(
         disabled.emplace(type);
         enabled.erase(type);
     } else if (0u == disabled.count(type)) {
-        enabled[type] = input;
+        enabled.emplace(type);
+        args.AddBlockchainNativePeer(type, input);
     }
 }
 
@@ -321,7 +324,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
         } else if (name == all_) {
             for (auto const chain : allChains) {
                 if (0u == disabled.count(chain)) {
-                    opts.enabled_chains_[chain];
+                    opts.enabled_chains_.emplace(chain);
                 }
             }
         } else if (name == home_) {
@@ -348,6 +351,7 @@ auto process_arguments(Options& opts, int argc, char** argv) noexcept -> void
                 parse(
                     value.as<opentxs::UnallocatedString>(),
                     chain,
+                    otargs,
                     enabled,
                     disabled);
             } catch (...) {

@@ -83,4 +83,12 @@ find_package(
 # -----------------------------------------------------------------------------
 # Build source
 
+add_executable(${PROJECT_NAME} "")
+otcommon_configure_target_cxx(${PROJECT_NAME})
+otcommon_define_signed_overflow(${PROJECT_NAME})
+target_link_libraries(
+  ${PROJECT_NAME} PUBLIC opentxs::libopentxs Boost::program_options
+)
+install(TARGETS ${PROJECT_NAME})
+
 add_subdirectory(src)

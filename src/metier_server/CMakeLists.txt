@@ -3,14 +3,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-set(cxx-sources main.cpp)
-
-add_executable(${PROJECT_NAME} ${cxx-sources})
-otcommon_configure_target_cxx(${PROJECT_NAME})
-otcommon_define_signed_overflow(${PROJECT_NAME})
-
-target_link_libraries(
-  ${PROJECT_NAME} PUBLIC opentxs::libopentxs Boost::program_options
+target_sources(
+  ${PROJECT_NAME}
+  PRIVATE
+    "Options.cpp"
+    "Options.hpp"
+    "main.cpp"
 )
-
-install(TARGETS ${PROJECT_NAME})

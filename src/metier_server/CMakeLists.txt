@@ -6,6 +6,8 @@
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
+    "App.cpp"
+    "App.hpp"
     "Options.cpp"
     "Options.hpp"
     "main.cpp"

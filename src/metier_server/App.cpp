@@ -5,6 +5,8 @@
 
 #include "metier_server/App.hpp"  // IWYU pragma: associated
 
+#include "metier_server/EventLoop.hpp"
+
 namespace metier_server
 {
 using namespace std::literals;
@@ -39,32 +41,6 @@ auto App::run_daemon() noexcept(false) -> int
     auto const& ot = opentxs::start(options_.ot_);
     ot.HandleSignals();
     auto const& client = ot.StartClientSession(options_.ot_, 0);
-    auto const enabled = [&] {
-        auto out = opentxs::Map<
-            std::string_view,
-            opentxs::blockchain::Type,
-            opentxs::NaturalCaseCompare>{};
-
-        for (auto const& chain : options_.enabled_chains_) {
-            if (client.Network().Blockchain().Enable(chain)) {
-                out.try_emplace(opentxs::blockchain::print(chain), chain);
-            } else {
-
-                throw std::runtime_error{
-                    "unable to enable "s.append(print(chain))};
-            }
-        }
-
-        return out;
-    }();
-    auto const sorted = [&] {
-        auto out = opentxs::Vector<opentxs::blockchain::Type>{};
-        out.reserve(enabled.size());
-        std::ranges::copy(
-            enabled | std::views::values, std::back_inserter(out));
-
-        return out;
-    }();
 
     if (options_.start_sync_server_) {
         constexpr auto prefix = "tcp://";
@@ -96,59 +72,27 @@ auto App::run_daemon() noexcept(false) -> int
         }
     }
 
-    client.Schedule(
-        6s,
-        [chains = sorted,
-         stats = client.Network().Blockchain().Stats()]() -> void {
-            static auto const widthChain = [] {
-                auto out = std::size_t{0};
+    for (auto const& chain : options_.enabled_chains_) {
+        if (false == client.Network().Blockchain().Enable(chain).IsValid()) {
 
-                for (auto const chain : opentxs::blockchain::defined_chains()) {
-                    out =
-                        std::max(out, opentxs::blockchain::print(chain).size());
-                }
+            throw std::runtime_error{"unable to enable "s.append(print(chain))};
+        }
+    }
 
-                return static_cast<int>(out + 2);
-            }();
-            static constexpr auto width{10};
-            auto out = std::stringstream{};
+    auto const running = client.StartSessionEventLoop(
+        [](auto const& api, auto& alloc) {
+            return std::allocate_shared<EventLoop>(alloc.result_, api, alloc);
+        },
+        {},
+        {},
+        1,
+        alloc_);
 
-            {
-                out << std::setw(widthChain) << " ";
-                out << std::setw(width) << "overall ";
-                out << std::setw(width) << "peer ";
-                out << std::setw(width) << "block ";
-                out << std::setw(width) << "block";
-                out << std::setw(width) << "cfheader";
-                out << std::setw(width) << "cfilter";
-                out << '\n';
-            }
+    if (false == running) {
 
-            {
-                out << std::setw(widthChain) << " ";
-                out << std::setw(width) << "progress";
-                out << std::setw(width) << "count";
-                out << std::setw(width) << "headers";
-                out << std::setw(width) << "chain";
-                out << std::setw(width) << "chain ";
-                out << std::setw(width) << "chain ";
-                out << '\n';
-            }
+        throw std::runtime_error{"failed to start event loop"};
+    }
 
-            for (auto const& chain : chains) {
-                out << std::setw(widthChain) << print(chain);
-                out << std::setw(width - 1) << std::fixed
-                    << std::setprecision(2) << stats.Progress(chain) << "%";
-                out << std::setw(width) << stats.PeerCount(chain);
-                out << std::setw(width) << stats.BlockHeaderTip(chain).height_;
-                out << std::setw(width) << stats.BlockTip(chain).height_;
-                out << std::setw(width) << stats.CfheaderTip(chain).height_;
-                out << std::setw(width) << stats.CfilterTip(chain).height_;
-                out << '\n';
-            }
-
-            std::cout << out.str() << std::endl;
-        });
     opentxs::join();
 
     return 0;

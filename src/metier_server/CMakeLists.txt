@@ -8,6 +8,8 @@ target_sources(
   PRIVATE
     "App.cpp"
     "App.hpp"
+    "EventLoop.cpp"
+    "EventLoop.hpp"
     "Options.cpp"
     "Options.hpp"
     "main.cpp"

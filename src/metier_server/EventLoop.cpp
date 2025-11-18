@@ -87,6 +87,11 @@ auto EventLoop::print_status(
     reset_status_timer(state);
 }
 
+auto EventLoop::RequestedTimerCount() const noexcept -> std::size_t
+{
+    return 1_uz;
+}
+
 auto EventLoop::Run(
     opentxs::api::Session const&,
     opentxs::util::eventloop::state::PreInit&,

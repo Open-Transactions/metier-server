@@ -83,9 +83,6 @@ auto App::run_daemon() noexcept(false) -> int
         [](auto const& api, auto& alloc) {
             return std::allocate_shared<EventLoop>(alloc.result_, api, alloc);
         },
-        {},
-        {},
-        1,
         alloc_);
 
     if (false == running) {

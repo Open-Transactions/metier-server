@@ -16,6 +16,8 @@ public:
     [[nodiscard]] auto Description() const noexcept -> std::string_view final;
 
     [[nodiscard]] auto get_deleter() noexcept -> delete_function final;
+    [[nodiscard]] auto RequestedTimerCount() const noexcept
+        -> std::size_t final;
     [[nodiscard]] auto Run(
         opentxs::api::Session const& api,
         opentxs::util::eventloop::state::PreInit& state,

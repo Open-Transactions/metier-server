@@ -9,7 +9,7 @@
 
 auto main(int argc, char* argv[]) -> int
 {
-    std::set_terminate(&opentxs::terminate_handler);
+    opentxs::init_terminate_handler();
 
     try {
         auto alloc = opentxs::alloc::Strategy{};
@@ -17,6 +17,10 @@ auto main(int argc, char* argv[]) -> int
         return metier_server::App{argc, argv, alloc}.Run();
     } catch (std::exception const& e) {
         opentxs::LogError()(e.what()).Flush();
+
+        return 1;
+    } catch (...) {
+        opentxs::LogError()("unknown exception").Flush();
 
         return 1;
     }

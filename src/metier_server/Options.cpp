@@ -164,14 +164,13 @@ auto Options::process_arguments(int argc, char** argv) noexcept(false) -> void
             }
         } else if (name == sync_server_) {
             try {
-                sync_port_ = 0;
+                sync_port_ = value.as<decltype(sync_port_)>();
                 ot_.SetBlockchainProfile(opentxs::blockchain::Profile::server);
             } catch (...) {
             }
         } else if (name == sync_public_ip_) {
             try {
-                sync_server_public_ip_ =
-                    value.as<decltype(sync_server_public_ip_)>();
+                sync_server_public_ip_.assign(value.as<std::string>());
             } catch (...) {
             }
         } else {

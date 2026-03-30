@@ -184,7 +184,9 @@ auto Options::process_arguments(int argc, char** argv) noexcept(false) -> void
         }
     }
 
-    for (auto const chain : disabled_chains_) { ot_.DisableBlockchain(chain); }
+    for (auto const chain : disabled_chains_) {
+        ot_.DisableBlockchain(chain);
+    }
 
     start_sync_server_ =
         (0 < sync_port_) &&

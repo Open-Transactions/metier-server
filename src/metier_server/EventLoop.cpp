@@ -116,7 +116,7 @@ auto EventLoop::Run(
 auto EventLoop::Run(
     opentxs::api::Session const&,
     opentxs::util::eventloop::state::ProcessMessage& state,
-    opentxs::util::eventloop::SocketIndex,
+    opentxs::util::eventloop::socket::Index,
     std::optional<opentxs::util::eventloop::MessageType> type,
     opentxs::util::eventloop::Message&&,
     opentxs::alloc::Strategy&) noexcept(false) -> bool

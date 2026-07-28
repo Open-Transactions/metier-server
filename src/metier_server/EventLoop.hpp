@@ -34,7 +34,7 @@ public:
     [[nodiscard]] auto Run(
         opentxs::api::Session const& api,
         opentxs::util::eventloop::state::ProcessMessage& state,
-        opentxs::util::eventloop::SocketIndex index,
+        opentxs::util::eventloop::socket::Index receivedOn,
         std::optional<opentxs::util::eventloop::MessageType> type,
         opentxs::util::eventloop::Message&& message,
         opentxs::alloc::Strategy& alloc) noexcept(false) -> bool final;

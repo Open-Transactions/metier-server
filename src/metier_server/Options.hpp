@@ -9,7 +9,7 @@
 #pragma GCC diagnostic ignored "-Wnull-dereference"
 #include <boost/program_options.hpp>
 #pragma GCC diagnostic pop
-#include <opentxs/opentxs.hpp>
+#include "metier_server/external/opentxs.hpp"
 
 namespace metier_server
 {

@@ -5,9 +5,8 @@
 
 #pragma once
 
-#include <opentxs/opentxs.hpp>
-
 #include "metier_server/Options.hpp"
+#include "metier_server/external/opentxs.hpp"
 
 namespace metier_server
 {

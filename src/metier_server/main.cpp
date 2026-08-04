@@ -3,9 +3,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <opentxs/opentxs.hpp>
-
 #include "metier_server/App.hpp"
+#include "metier_server/external/opentxs.hpp"
 
 auto main(int argc, char* argv[]) -> int
 {

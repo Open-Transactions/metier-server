@@ -3,16 +3,4 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-add_subdirectory(external)
-
-target_sources(
-  ${PROJECT_NAME}
-  PRIVATE
-    "App.cpp"
-    "App.hpp"
-    "EventLoop.cpp"
-    "EventLoop.hpp"
-    "Options.cpp"
-    "Options.hpp"
-    "main.cpp"
-)
+target_sources(${PROJECT_NAME} PRIVATE "opentxs.cpp" "opentxs.hpp")

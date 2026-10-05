@@ -13,14 +13,14 @@ using namespace opentxs::literals;
 Options::Options(
     int argc,
     char** argv,
-    opentxs::alloc::Strategy& alloc) noexcept(false)
+    opentxs::alloc::Strategy const& alloc) noexcept(false)
     : ot_()
-    , disabled_chains_(alloc.result_)
-    , enabled_chains_(alloc.result_)
+    , disabled_chains_(alloc.Persist())
+    , enabled_chains_(alloc.Persist())
     , show_help_()
     , sync_port_()
     , start_sync_server_()
-    , sync_server_public_ip_(alloc.result_)
+    , sync_server_public_ip_(alloc.Persist())
 {
     read_options(argc, argv);
     process_arguments(argc, argv);

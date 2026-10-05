@@ -15,10 +15,12 @@ class App
 public:
     auto Run() noexcept(false) -> int;
 
-    App(int argc, char** argv, opentxs::alloc::Strategy& alloc) noexcept(false);
+    App(int argc,
+        char** argv,
+        opentxs::alloc::Strategy const& alloc) noexcept(false);
 
 private:
-    opentxs::alloc::Strategy& alloc_;
+    opentxs::alloc::Strategy const& alloc_;
     Options const options_;
 
     auto print_help() noexcept(false) -> int;

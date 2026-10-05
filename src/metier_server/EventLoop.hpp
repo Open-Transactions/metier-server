@@ -23,25 +23,25 @@ public:
     [[nodiscard]] auto Run(
         opentxs::api::Session const& api,
         opentxs::util::eventloop::state::PreInit& state,
-        opentxs::util::eventloop::Socket& subscribe,
-        std::span<opentxs::util::eventloop::Socket> internal,
-        std::span<opentxs::util::eventloop::Socket> external,
-        opentxs::alloc::Strategy& alloc) noexcept(false) -> bool final;
+        opentxs::util::eventloop::socket::ZMQ& subscribe,
+        opentxs::util::eventloop::socket::View internal,
+        opentxs::util::eventloop::socket::View external,
+        opentxs::alloc::Strategy const& alloc) noexcept(false) -> bool final;
     [[nodiscard]] auto Run(
         opentxs::api::Session const& api,
         opentxs::util::eventloop::state::Init& state,
-        opentxs::alloc::Strategy& alloc) noexcept(false) -> bool final;
+        opentxs::alloc::Strategy const& alloc) noexcept(false) -> bool final;
     [[nodiscard]] auto Run(
         opentxs::api::Session const& api,
         opentxs::util::eventloop::state::ProcessMessage& state,
         opentxs::util::eventloop::socket::Index receivedOn,
         std::optional<opentxs::util::eventloop::MessageType> type,
         opentxs::util::eventloop::Message&& message,
-        opentxs::alloc::Strategy& alloc) noexcept(false) -> bool final;
+        opentxs::alloc::Strategy const& alloc) noexcept(false) -> bool final;
 
     EventLoop(
         opentxs::api::Session const& api,
-        opentxs::alloc::Strategy& alloc,
+        opentxs::alloc::Strategy const& alloc,
         allocator_type) noexcept(false);
 
     ~EventLoop() final;
@@ -61,7 +61,7 @@ private:
 
     static auto sort_enabled_chains(
         opentxs::api::Session const& api,
-        opentxs::alloc::Strategy& alloc) noexcept(false) -> EnabledChains;
+        opentxs::alloc::Strategy const& alloc) noexcept(false) -> EnabledChains;
 
     auto print_status(
         opentxs::util::eventloop::state::ProcessMessage& state) noexcept(false)

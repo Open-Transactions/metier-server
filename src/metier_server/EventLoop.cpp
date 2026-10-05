@@ -9,11 +9,11 @@ namespace metier_server
 {
 EventLoop::EventLoop(
     opentxs::api::Session const& api,
-    opentxs::alloc::Strategy& alloc,
+    opentxs::alloc::Strategy const& alloc,
     allocator_type) noexcept(false)
-    : opentxs::api::session::EventLoop(alloc.result_)
+    : opentxs::api::session::EventLoop(alloc.Persist())
     , enabled_chains_(sort_enabled_chains(api, alloc))
-    , stats_(api.Network().Blockchain().Stats(alloc), alloc.result_)
+    , stats_(api.Network().Blockchain().Stats(alloc), alloc.Persist())
     , chain_print_width_([&] {
         if (enabled_chains_.empty()) {
 
@@ -95,10 +95,10 @@ auto EventLoop::RequestedTimerCount() const noexcept -> std::size_t
 auto EventLoop::Run(
     opentxs::api::Session const&,
     opentxs::util::eventloop::state::PreInit&,
-    opentxs::util::eventloop::Socket&,
-    std::span<opentxs::util::eventloop::Socket>,
-    std::span<opentxs::util::eventloop::Socket>,
-    opentxs::alloc::Strategy&) noexcept(false) -> bool
+    opentxs::util::eventloop::socket::ZMQ&,
+    opentxs::util::eventloop::socket::View,
+    opentxs::util::eventloop::socket::View,
+    opentxs::alloc::Strategy const&) noexcept(false) -> bool
 {
     return true;
 }
@@ -106,7 +106,7 @@ auto EventLoop::Run(
 auto EventLoop::Run(
     opentxs::api::Session const&,
     opentxs::util::eventloop::state::Init& state,
-    opentxs::alloc::Strategy&) noexcept(false) -> bool
+    opentxs::alloc::Strategy const&) noexcept(false) -> bool
 {
     reset_status_timer(state);
 
@@ -119,7 +119,7 @@ auto EventLoop::Run(
     opentxs::util::eventloop::socket::Index,
     std::optional<opentxs::util::eventloop::MessageType> type,
     opentxs::util::eventloop::Message&&,
-    opentxs::alloc::Strategy&) noexcept(false) -> bool
+    opentxs::alloc::Strategy const&) noexcept(false) -> bool
 {
     using enum opentxs::util::WorkType;
 
@@ -140,23 +140,23 @@ auto EventLoop::Run(
 
 auto EventLoop::sort_enabled_chains(
     opentxs::api::Session const& api,
-    opentxs::alloc::Strategy& alloc) noexcept(false) -> EnabledChains
+    opentxs::alloc::Strategy const& alloc) noexcept(false) -> EnabledChains
 {
     auto sorted = [&] {
         auto out = opentxs::Map<
             std::string_view,
             opentxs::blockchain::Type,
-            opentxs::NaturalCaseCompare>{alloc.work_};
+            opentxs::NaturalCaseCompare>{alloc.Temp()};
         constexpr auto to_name = [](auto const& chain) {
             return std::make_pair(print(chain), chain);
         };
         auto const enabled =
-            api.Network().Blockchain().EnabledChains(alloc.WorkOnly());
+            api.Network().Blockchain().EnabledChains(alloc.OnlyTemp());
         std::ranges::transform(enabled, std::inserter(out, out.end()), to_name);
 
         return out;
     }();
-    auto out = EnabledChains{alloc.result_};
+    auto out = EnabledChains{alloc.Persist()};
     std::ranges::copy(sorted | std::views::values, std::back_inserter(out));
 
     return out;

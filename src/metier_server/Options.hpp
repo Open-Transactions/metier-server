@@ -32,8 +32,10 @@ public:
     bool start_sync_server_;
     opentxs::String sync_server_public_ip_;
 
-    Options(int argc, char** argv, opentxs::alloc::Strategy& alloc) noexcept(
-        false);
+    Options(
+        int argc,
+        char** argv,
+        opentxs::alloc::Strategy const& alloc) noexcept(false);
 
 private:
     static constexpr auto all_ = "all";
